@@ -4,11 +4,23 @@
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Projet Spé 4</title>
+		<link rel="stylesheet" href="/src/style.css" />
 	</head>
 	<body>
 		<h1>Projet Spé 4</h1>
 		<p>API : <span id="api-status">…</span></p>
 		<p>WebSocket : <span id="ws-status">…</span></p>
+
+		<h2>Fichiers</h2>
+		<ul id="files"></ul>
+		<p>Fichier ouvert : <span id="room-status">aucun</span></p>
+
+		<div class="editor">
+			<div id="cursors"></div>
+			<textarea id="editor" disabled placeholder="Choisis un fichier"></textarea>
+		</div>
+
+		<ul id="messages"></ul>
 		<script type="module" src="/src/main.js"></script>
 	</body>
 </html>

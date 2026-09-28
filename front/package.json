@@ -11,5 +11,8 @@
 	},
 	"devDependencies": {
 		"vite": "^7.0.0"
+	},
+	"dependencies": {
+		"yjs": "^13.6.33"
 	}
 }

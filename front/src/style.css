@@ -1,0 +1,52 @@
+#files button {
+    margin-bottom: 4px;
+}
+
+/* textarea et curseurs l'un sur l'autre : même police et même padding obligatoire */
+.editor {
+    position: relative;
+    width: 600px;
+    height: 300px;
+    background: white;
+}
+
+#editor,
+#cursors {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    padding: 8px;
+    border: 1px solid #999;
+    box-sizing: border-box;
+    font: 14px/1.5 monospace;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    overflow-y: scroll;
+}
+
+#editor {
+    background: transparent;
+    resize: none;
+}
+
+#cursors {
+    color: transparent;
+    pointer-events: none;
+}
+
+.cursor {
+    position: relative;
+    border-left: 2px solid;
+    margin-left: -1px;
+}
+
+.cursor-name {
+    position: absolute;
+    bottom: 100%;
+    left: -2px;
+    padding: 0 4px;
+    color: white;
+    font-size: 10px;
+    line-height: 1.4;
+    white-space: nowrap;
+}
