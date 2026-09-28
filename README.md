@@ -42,3 +42,19 @@ npm run dev
 | API       | http://localhost:3000 |
 | WebSocket | ws://localhost:3001   |
 | Front     | http://localhost:5173 |
+
+## Convention de commit
+
+Les messages de commit suivent les [Conventional Commits](https://www.conventionalcommits.org/fr/v1.0.0/) :
+
+```
+<type>(<scope optionnel>): <description>
+```
+
+Types autorisés : `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, `build`, `ci`, `revert`.
+
+Le hook `.githooks/commit-msg` refuse tout commit non conforme. `npm install` dans n'importe quel dossier (`back`, `websocket` ou `front`) l'active automatiquement. Pour l'activer sans installer les dépendances :
+
+```bash
+git config core.hooksPath .githooks
+```

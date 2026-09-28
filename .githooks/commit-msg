@@ -1,0 +1,29 @@
+#!/bin/sh
+# Refuse tout commit dont le message ne respecte pas les Conventional Commits.
+
+first_line=$(tr -d '\r' < "$1" | sed -n '/^#/d;/^[[:space:]]*$/d;p;q')
+
+# Messages générés automatiquement par git
+if echo "$first_line" | grep -Eq '^(Merge |Revert "|fixup! |squash! |amend! )'; then
+  exit 0
+fi
+
+types='feat|fix|docs|style|refactor|perf|test|chore|build|ci|revert'
+
+if echo "$first_line" | grep -Eq "^($types)(\([^()]+\))?!?: .+"; then
+  exit 0
+fi
+
+echo ""
+echo "Commit refusé : le message ne respecte pas les Conventional Commits."
+echo ""
+echo "  Reçu   : $first_line"
+echo "  Format : <type>(<scope optionnel>): <description>"
+echo "  Types  : feat, fix, docs, style, refactor, perf, test, chore, build, ci, revert"
+echo ""
+echo "  Exemples :"
+echo "    feat(back): ajoute la route de connexion"
+echo "    fix(websocket): corrige la diffusion des messages"
+echo "    docs: complète le README"
+echo ""
+exit 1
