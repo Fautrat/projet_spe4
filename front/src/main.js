@@ -2,7 +2,7 @@ import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router/index.js';
 import './assets/styles/style.css';
-import { openDocument, receiveUpdate, receiveCursor, removeCursor, sendCursor } from './editor.js';
+// import { openDocument, receiveUpdate, receiveCursor, removeCursor, sendCursor } from './editor.js';
 
 createApp(App).use(router).mount('#app');
 
