@@ -5,22 +5,26 @@ import { session } from '../stores/session.js';
 const users = [
 	{
 		id: 1,
-		email: 'mj@grimoire.fr',
+		email: 'mj@test.fr',
 		password: 'admin1234',
-		first_name: 'Aldric',
-		last_name: 'Montfer',
+		first_name: 'Maitre',
+		last_name: 'Jedi',
 		role: 'admin',
 		is_blocked: false,
+		totp_enabled: false,
+		totp_secret: null,
 		created_at: '2026-09-01T09:00:00',
 	},
 	{
 		id: 2,
-		email: 'aventurier@grimoire.fr',
+		email: 'aventurier@test.fr',
 		password: 'user1234',
-		first_name: 'Lyra',
-		last_name: 'Sombrebois',
+		first_name: 'Jeune',
+		last_name: 'Padawan',
 		role: 'user',
 		is_blocked: false,
+		totp_enabled: false,
+		totp_secret: null,
 		created_at: '2026-09-12T14:30:00',
 	},
 ];
@@ -69,16 +73,36 @@ function nextId(list) {
 	return Math.max(0, ...list.map((item) => item.id)) + 1;
 }
 
+// Code accepté par le mock pour la double authentification.
+const MOCK_TOTP_CODE = '123456';
+
 function withoutPassword(user) {
-	const { password, ...rest } = user;
+	const { password, totp_secret, ...rest } = user;
 	return rest;
+}
+
+function currentUser() {
+	return users.find((item) => item.id === session.user.id);
+}
+
+function checkCode(code) {
+	if (code !== MOCK_TOTP_CODE) {
+		throw new Error('Code incorrect. En mode démo, le code est 123456.');
+	}
 }
 
 function addUser(user) {
 	if (users.some((item) => item.email === user.email)) {
 		throw new Error('Cet email est déjà inscrit au registre.');
 	}
-	const newUser = { ...user, id: nextId(users), is_blocked: false, created_at: new Date().toISOString() };
+	const newUser = {
+		...user,
+		id: nextId(users),
+		is_blocked: false,
+		totp_enabled: false,
+		totp_secret: null,
+		created_at: new Date().toISOString(),
+	};
 	users.push(newUser);
 	return newUser;
 }
@@ -124,6 +148,16 @@ export async function login(email, password) {
 	if (user.is_blocked) {
 		throw new Error('Ce compte a été banni par le maître du jeu.');
 	}
+	if (user.totp_enabled) {
+		return { requires_2fa: true, temp_token: `temp-${user.id}` };
+	}
+	return { user: withoutPassword(user), token: 'mock-token' };
+}
+
+export async function verifyTwoFactor(tempToken, code) {
+	await wait();
+	checkCode(code);
+	const user = users.find((item) => `temp-${item.id}` === tempToken);
 	return { user: withoutPassword(user), token: 'mock-token' };
 }
 
@@ -229,5 +263,49 @@ export async function setUserBlocked(id, isBlocked) {
 	await wait();
 	const user = users.find((item) => item.id === id);
 	user.is_blocked = isBlocked;
+	return withoutPassword(user);
+}
+
+// Profil de l'utilisateur connecté
+
+export async function updateProfile(changes) {
+	await wait();
+	const user = currentUser();
+	if (users.some((item) => item.email === changes.email && item.id !== user.id)) {
+		throw new Error('Cet email est déjà inscrit au registre.');
+	}
+	Object.assign(user, changes);
+	return withoutPassword(user);
+}
+
+export async function changePassword(currentPassword, newPassword) {
+	await wait();
+	const user = currentUser();
+	if (user.password !== currentPassword) {
+		throw new Error('Le mot de passe actuel est incorrect.');
+	}
+	user.password = newPassword;
+}
+
+export async function setupTwoFactor() {
+	await wait();
+	currentUser().totp_secret = 'JBSWY3DPEHPK3PXP';
+	return { secret: 'JBSWY3DPEHPK3PXP', qr_code: null };
+}
+
+export async function enableTwoFactor(code) {
+	await wait();
+	checkCode(code);
+	const user = currentUser();
+	user.totp_enabled = true;
+	return withoutPassword(user);
+}
+
+export async function disableTwoFactor(code) {
+	await wait();
+	checkCode(code);
+	const user = currentUser();
+	user.totp_enabled = false;
+	user.totp_secret = null;
 	return withoutPassword(user);
 }

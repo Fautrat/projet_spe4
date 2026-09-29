@@ -46,6 +46,14 @@ export function login(email, password) {
 	return request('POST', '/api/auth/login', { email, password });
 }
 
+// Si la double authentification est activée, login renvoie { requires_2fa: true, temp_token }.
+export function verifyTwoFactor(tempToken, code) {
+	if (USE_MOCKS) {
+		return mock.verifyTwoFactor(tempToken, code);
+	}
+	return request('POST', '/api/auth/2fa/verify', { temp_token: tempToken, code });
+}
+
 export function register(user) {
 	if (USE_MOCKS) {
 		return mock.register(user);
@@ -154,4 +162,45 @@ export function setUserBlocked(id, isBlocked) {
 		return mock.setUserBlocked(id, isBlocked);
 	}
 	return request('PATCH', `/api/users/${id}`, { is_blocked: isBlocked });
+}
+
+// Profil de l'utilisateur connecté
+
+export function updateProfile(changes) {
+	if (USE_MOCKS) {
+		return mock.updateProfile(changes);
+	}
+	return request('PATCH', '/api/users/me', changes);
+}
+
+export function changePassword(currentPassword, newPassword) {
+	if (USE_MOCKS) {
+		return mock.changePassword(currentPassword, newPassword);
+	}
+	return request('PATCH', '/api/users/me/password', {
+		current_password: currentPassword,
+		new_password: newPassword,
+	});
+}
+
+// Renvoie { secret, qr_code } : qr_code est une image (data URL) générée par le back.
+export function setupTwoFactor() {
+	if (USE_MOCKS) {
+		return mock.setupTwoFactor();
+	}
+	return request('POST', '/api/auth/2fa/setup');
+}
+
+export function enableTwoFactor(code) {
+	if (USE_MOCKS) {
+		return mock.enableTwoFactor(code);
+	}
+	return request('POST', '/api/auth/2fa/enable', { code });
+}
+
+export function disableTwoFactor(code) {
+	if (USE_MOCKS) {
+		return mock.disableTwoFactor(code);
+	}
+	return request('POST', '/api/auth/2fa/disable', { code });
 }

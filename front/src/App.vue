@@ -23,6 +23,7 @@ async function onLogout() {
 		<nav>
 			<RouterLink to="/library">Bibliothèque</RouterLink>
 			<RouterLink v-if="session.user.role === 'admin'" to="/users">Aventuriers</RouterLink>
+			<RouterLink to="/profile">Ma fiche</RouterLink>
 		</nav>
 
 		<div class="whoami">

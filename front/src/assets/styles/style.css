@@ -133,6 +133,14 @@ textarea:focus {
 	color: var(--blood-dark);
 }
 
+.success {
+	margin: 0;
+	padding: 0.6rem 0.9rem;
+	background: #dfe8cf;
+	border-left: 4px solid #4f6b3a;
+	color: #34481f;
+}
+
 /* Barre du haut */
 
 .topbar {
@@ -345,6 +353,48 @@ tbody tr:last-child td {
 .no-preview {
 	color: var(--ink-light);
 	font-style: italic;
+}
+
+/* Fiche de personnage */
+
+.panel {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+	max-width: 560px;
+	padding: 1.8rem 2rem;
+}
+
+.panel h2 {
+	margin: 0;
+	color: var(--blood);
+	font-family: var(--title);
+	font-size: 1.2rem;
+}
+
+.panel p {
+	margin: 0;
+}
+
+.panel .btn {
+	align-self: flex-start;
+}
+
+.code-input {
+	width: 10rem;
+	font-family: monospace;
+	font-size: 1.2rem;
+	letter-spacing: 0.3em;
+	text-align: center;
+}
+
+.login-card .code-input {
+	width: 100%;
+}
+
+.qr-code {
+	width: 180px;
+	height: 180px;
 }
 
 /* Connexion */

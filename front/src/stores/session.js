@@ -13,6 +13,10 @@ export function openSession(user, token) {
 	localStorage.setItem('session', JSON.stringify({ user, token }));
 }
 
+export function updateSessionUser(user) {
+	openSession(user, session.token);
+}
+
 export function closeSession() {
 	session.user = null;
 	session.token = null;

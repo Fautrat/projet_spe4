@@ -5,6 +5,7 @@ import RegisterView from '../views/RegisterView.vue';
 import LibraryView from '../views/LibraryView.vue';
 import DocumentView from '../views/DocumentView.vue';
 import UsersView from '../views/UsersView.vue';
+import ProfileView from '../views/ProfileView.vue';
 
 const router = createRouter({
 	history: createWebHistory(),
@@ -14,6 +15,7 @@ const router = createRouter({
 		{ path: '/library/:folderId?', name: 'library', component: LibraryView },
 		{ path: '/documents/:id', name: 'document', component: DocumentView },
 		{ path: '/users', name: 'users', component: UsersView },
+		{ path: '/profile', name: 'profile', component: ProfileView },
 		{ path: '/:pathMatch(.*)*', redirect: '/library' },
 	],
 });
