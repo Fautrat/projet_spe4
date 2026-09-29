@@ -1,6 +1,11 @@
-import { Router }   from 'express';
-import { conn }     from '../config/db.js';
+import { Router } from 'express';
+import { getFiles, getFile, updateFile, deleteFile } from '../controllers/filesController.js';
 
-const mainRoutes = Router();
+const filesRoutes = Router();
 
-export default mainRoutes;
+filesRoutes.get('/', getFiles);
+filesRoutes.get('/:id', getFile);
+filesRoutes.put('/:id', updateFile);
+filesRoutes.delete('/:id', deleteFile);
+
+export default filesRoutes;

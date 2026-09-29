@@ -4,6 +4,7 @@ import express from 'express';
 import morgan from 'morgan';
 // import passport from 'passport';
 import authRoutes from './routes/authRoutes.js';
+import filesRoutes from './routes/filesRoutes.js';
 import mainRoutes from './routes/mainRoutes.js';
 
 
@@ -31,6 +32,7 @@ app.use(morgan(":date[Europe/Paris] \: :remote-addr - :method :url | :status | :
 // Routes
 app.use('/', mainRoutes)
 app.use('/auth', authRoutes)
+app.use('/files', filesRoutes)
 
 // Server starting
 app.listen(PORT, () => {
