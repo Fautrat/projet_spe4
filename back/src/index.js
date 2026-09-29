@@ -11,9 +11,9 @@ app.use(cors({ origin: CLIENT_URL }));
 app.use(express.json());
 
 app.get('/api/health', (req, res) => {
-  	res.json({ status: 'ok' });
+	res.json({ status: 'ok' });
 });
 
 app.listen(PORT, () => {
-  	console.log(`API démarrée sur http://localhost:${PORT}`);
+	console.log(`API démarrée sur http://localhost:${PORT}`);
 });

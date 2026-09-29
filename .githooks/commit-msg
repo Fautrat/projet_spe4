@@ -5,13 +5,13 @@ first_line=$(tr -d '\r' < "$1" | sed -n '/^#/d;/^[[:space:]]*$/d;p;q')
 
 # Messages générés automatiquement par git
 if echo "$first_line" | grep -Eq '^(Merge |Revert "|fixup! |squash! |amend! )'; then
-  exit 0
+	exit 0
 fi
 
 types='feat|fix|docs|style|refactor|perf|test|chore|build|ci|revert'
 
 if echo "$first_line" | grep -Eq "^($types)(\([^()]+\))?!?: .+"; then
-  exit 0
+	exit 0
 fi
 
 echo ""

@@ -6,7 +6,7 @@ Application collaborative d'édition de documents en temps réel.
 
 - `back/` : API REST (Node.js, Express)
 - `websocket/` : serveur temps réel (Node.js, ws)
-- `front/` : client web (Vite)
+- `front/` : client web (Vue 3, Vite)
 
 ## Prérequis
 
@@ -42,6 +42,15 @@ npm run dev
 | API       | http://localhost:3000 |
 | WebSocket | ws://localhost:3001   |
 | Front     | http://localhost:5173 |
+
+## Comptes de test du front
+
+Tant que `VITE_USE_MOCKS` ne vaut pas `false` dans `front/.env`, le front tourne sur des données simulées (`front/src/mocks/mockBackApi.js`) :
+
+| Rôle | Email | Mot de passe |
+|---|---|---|
+| Admin (maître du jeu) | mj@grimoire.fr | admin1234 |
+| Utilisateur (aventurier) | aventurier@grimoire.fr | user1234 |
 
 ## Convention de commit
 
