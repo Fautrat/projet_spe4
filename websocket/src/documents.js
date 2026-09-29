@@ -1,29 +1,22 @@
-import fs from 'node:fs';
-import * as Y from 'yjs';
+import { db } from './db.js';
 
-// pas encore de BDD donc on utilise les .txt du dossier files/
-const FOLDER = './files/';
+// documents en cours d'édition : id -> { text, changed, userId }
+export const docs = new Map();
 
-export const files = fs.readdirSync(FOLDER);
-
-const docs = {};
-const timers = {};
-
-export function getDoc(name) {
-	if (!docs[name]) {
-		docs[name] = new Y.Doc();
-		docs[name].getText('content').insert(0, fs.readFileSync(FOLDER + name, 'utf8'));
+export async function getDoc(id) {
+	if (!docs.has(id)) {
+		const [rows] = await db.query('SELECT content FROM documents WHERE id = ?', [id]);
+		if (rows.length === 0) return null;
+		docs.set(id, { text: rows[0].content || '', changed: false, userId: null });
 	}
-	return docs[name];
+	return docs.get(id);
 }
 
-export function updateDoc(name, update) {
-	Y.applyUpdate(getDoc(name), update);
+export async function saveDoc(id) {
+	const doc = docs.get(id);
+	if (!doc || !doc.changed) return false;
 
-	// sauvegarde 1s après la dernière modif
-	clearTimeout(timers[name]);
-	timers[name] = setTimeout(() => {
-		fs.writeFileSync(FOLDER + name, getDoc(name).getText('content').toString());
-		console.log(`${name} sauvegardé`);
-	}, 1000);
+	await db.query('UPDATE documents SET content = ?, updated_by = COALESCE(?, updated_by) WHERE id = ?', [doc.text, doc.userId, id]);
+	doc.changed = false;
+	return true;
 }

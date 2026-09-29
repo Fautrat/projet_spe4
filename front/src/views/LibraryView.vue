@@ -30,7 +30,7 @@ async function load() {
 watch(() => route.params.folderId, load, { immediate: true });
 
 function currentFolderId() {
-	return library.value.folder ? library.value.folder.id : null;
+	return library.value?.folder ? library.value.folder.id : null;
 }
 
 async function run(action) {

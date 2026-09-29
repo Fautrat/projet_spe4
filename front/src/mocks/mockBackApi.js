@@ -1,4 +1,5 @@
-// Fausse API utilisée tant que VITE_USE_MOCKS n'est pas à false.
+// Fausse API pour l'auth, les utilisateurs et le profil, tant que VITE_USE_MOCKS n'est pas à false.
+// Les fichiers passent déjà par le vrai back.
 // Les données restent en mémoire : elles reviennent à zéro à chaque rechargement.
 import { session } from '../stores/session.js';
 
@@ -26,42 +27,6 @@ const users = [
 		totp_enabled: false,
 		totp_secret: null,
 		created_at: '2026-09-12T14:30:00',
-	},
-];
-
-let folders = [
-	{ id: 1, name: 'Bestiaire', parent_id: null, updated_at: '2026-09-20T18:00:00' },
-	{ id: 2, name: 'Chroniques de campagne', parent_id: null, updated_at: '2026-09-26T21:15:00' },
-	{ id: 3, name: 'Dragons', parent_id: 1, updated_at: '2026-09-22T10:40:00' },
-];
-
-let documents = [
-	{
-		id: 1,
-		folder_id: null,
-		name: 'Règles de la maison',
-		content: 'Un 20 naturel double les dégâts.\nUn 1 naturel fait tomber votre arme.\nLe maître du jeu a toujours raison.',
-		file_path: null,
-		updated_at: '2026-09-25T20:30:00',
-		updated_by_name: 'Maitre Jedi',
-	},
-	{
-		id: 2,
-		folder_id: 3,
-		name: 'Le dragon de Brumeval',
-		content: 'Vieux dragon rouge endormi sous la montagne.\nPoints faibles : l\'orgueil et les chants elfiques.',
-		file_path: null,
-		updated_at: '2026-09-22T10:40:00',
-		updated_by_name: 'Jeune Padawan',
-	},
-	{
-		id: 3,
-		folder_id: 2,
-		name: 'Session 1 : la taverne du Sanglier noir',
-		content: 'Le groupe se rencontre à la taverne. Une bagarre éclate, le barde s\'enfuit avec la caisse.',
-		file_path: null,
-		updated_at: '2026-09-26T21:15:00',
-		updated_by_name: 'Maitre Jedi',
 	},
 ];
 
@@ -107,38 +72,6 @@ function addUser(user) {
 	return newUser;
 }
 
-function touch(doc) {
-	doc.updated_at = new Date().toISOString();
-	doc.updated_by_name = `${session.user.first_name} ${session.user.last_name}`;
-}
-
-function findDocument(id) {
-	const doc = documents.find((item) => item.id === Number(id));
-	if (!doc) {
-		throw new Error('Ce parchemin est introuvable.');
-	}
-	return doc;
-}
-
-function pathTo(folderId) {
-	const path = [];
-	let folder = folders.find((item) => item.id === folderId);
-	while (folder) {
-		path.unshift(folder);
-		const parentId = folder.parent_id;
-		folder = folders.find((item) => item.id === parentId);
-	}
-	return path;
-}
-
-function subFolderIds(folderId) {
-	const ids = [folderId];
-	for (const child of folders.filter((item) => item.parent_id === folderId)) {
-		ids.push(...subFolderIds(child.id));
-	}
-	return ids;
-}
-
 export async function login(email, password) {
 	await wait();
 	const user = users.find((item) => item.email === email && item.password === password);
@@ -169,84 +102,6 @@ export async function register(user) {
 
 export async function logout() {
 	await wait();
-}
-
-export async function getFolder(folderId) {
-	await wait();
-	const id = folderId ? Number(folderId) : null;
-	return structuredClone({
-		folder: folders.find((item) => item.id === id) || null,
-		path: pathTo(id),
-		folders: folders.filter((item) => item.parent_id === id),
-		documents: documents.filter((item) => item.folder_id === id),
-	});
-}
-
-export async function createFolder(name, parentId) {
-	await wait();
-	const folder = { id: nextId(folders), name, parent_id: parentId, updated_at: new Date().toISOString() };
-	folders.push(folder);
-	return { ...folder };
-}
-
-export async function deleteFolder(id) {
-	await wait();
-	const ids = subFolderIds(id);
-	folders = folders.filter((item) => !ids.includes(item.id));
-	documents = documents.filter((item) => !ids.includes(item.folder_id));
-}
-
-export async function createDocument(name, folderId) {
-	await wait();
-	const doc = { id: nextId(documents), folder_id: folderId, name, content: '', file_path: null };
-	touch(doc);
-	documents.push(doc);
-	return { ...doc };
-}
-
-export async function uploadFile(file, folderId) {
-	await wait();
-	const doc = {
-		id: nextId(documents),
-		folder_id: folderId,
-		name: file.name,
-		content: null,
-		file_path: URL.createObjectURL(file),
-		mime_type: file.type || 'application/octet-stream',
-		file_size: file.size,
-	};
-	touch(doc);
-	documents.push(doc);
-	return { ...doc };
-}
-
-export async function getDocument(id) {
-	await wait();
-	return { ...findDocument(id) };
-}
-
-export async function saveDocument(id, content) {
-	await wait();
-	const doc = findDocument(id);
-	doc.content = content;
-	touch(doc);
-	return { ...doc };
-}
-
-export async function replaceFile(id, file) {
-	await wait();
-	const doc = findDocument(id);
-	doc.name = file.name;
-	doc.file_path = URL.createObjectURL(file);
-	doc.mime_type = file.type || 'application/octet-stream';
-	doc.file_size = file.size;
-	touch(doc);
-	return { ...doc };
-}
-
-export async function deleteDocument(id) {
-	await wait();
-	documents = documents.filter((item) => item.id !== id);
 }
 
 export async function getUsers() {

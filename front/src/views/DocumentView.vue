@@ -1,8 +1,11 @@
 <script setup>
-import { computed, onBeforeUnmount, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { fileUrl, getDocument, replaceFile, saveDocument } from '../services/backApi.js';
+import { connect } from '../services/websocket.js';
+import { session } from '../stores/session.js';
 import { formatDate, formatSize } from '../utils/format.js';
+import { diff, shift } from '../utils/textDiff.js';
 
 const route = useRoute();
 
@@ -11,8 +14,51 @@ const text = ref('');
 const status = ref('');
 const saveFailed = ref(false);
 const error = ref('');
+const textarea = ref(null);
 
 let saveTimer = null;
+
+// Édition à plusieurs : on envoie tout le texte aux autres à chaque frappe
+// et le serveur websocket sauvegarde en BDD toutes les 10s.
+// Si le websocket ne marche pas, on sauvegarde nous-mêmes avec l'API.
+let socket = null;
+let joined = false;
+
+function openSocket() {
+	socket = connect(onMessage);
+	socket.onopen = () => socket.sendJson({ type: 'join', id: doc.value.id, userId: session.user?.id });
+	socket.onclose = () => (joined = false);
+}
+
+function onMessage(message) {
+	if (message.type === 'joined') {
+		joined = true;
+		receiveContent(message.content);
+	} else if (message.type === 'content') {
+		receiveContent(message.text);
+	} else if (message.type === 'saved') {
+		saveFailed.value = false;
+		status.value = 'Enregistré';
+	} else if (message.type === 'save-error') {
+		saveFailed.value = true;
+		status.value = 'Échec de l\'enregistrement';
+	} else if (message.type === 'error') {
+		error.value = message.error;
+	}
+}
+
+function receiveContent(newText) {
+	// on garde notre curseur au bon endroit malgré les modifs des autres
+	const el = textarea.value;
+	const change = diff(text.value, newText);
+	const start = shift(el.selectionStart, change);
+	const end = shift(el.selectionEnd, change);
+
+	text.value = newText;
+	nextTick(() => {
+		if (document.activeElement === el) el.setSelectionRange(start, end);
+	});
+}
 
 const backLink = computed(() => {
 	if (doc.value && doc.value.folder_id) {
@@ -28,6 +74,7 @@ async function load() {
 	try {
 		doc.value = await getDocument(route.params.id);
 		text.value = doc.value.content || '';
+		if (!doc.value.file_path) openSocket();
 	} catch (e) {
 		error.value = e.message;
 	}
@@ -48,8 +95,13 @@ async function save() {
 
 function onInput() {
 	status.value = 'Modifications en cours…';
-	clearTimeout(saveTimer);
-	saveTimer = setTimeout(save, 1000);
+
+	if (joined) {
+		socket.sendJson({ type: 'content', text: text.value });
+	} else {
+		clearTimeout(saveTimer);
+		saveTimer = setTimeout(save, 1000);
+	}
 }
 
 async function onReplace(event) {
@@ -66,6 +118,7 @@ async function onReplace(event) {
 }
 
 onBeforeUnmount(() => {
+	socket?.close();
 	if (saveTimer) {
 		clearTimeout(saveTimer);
 		save();
@@ -90,6 +143,7 @@ load();
 
 		<textarea
 			v-if="!doc.file_path"
+			ref="textarea"
 			v-model="text"
 			class="parchment editor"
 			placeholder="Il était une fois…"

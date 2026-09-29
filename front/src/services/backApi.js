@@ -21,20 +21,9 @@ async function request(method, path, body) {
 	const data = await response.json().catch(() => null);
 
 	if (!response.ok) {
-		throw new Error(data?.message || 'Le serveur ne répond pas.');
+		throw new Error(data?.message || data?.error || 'Le serveur ne répond pas.');
 	}
 	return data;
-}
-
-function fileForm(file, fields = {}) {
-	const form = new FormData();
-	form.append('file', file);
-	for (const [key, value] of Object.entries(fields)) {
-		if (value !== null) {
-			form.append(key, value);
-		}
-	}
-	return form;
 }
 
 // Authentification
@@ -70,75 +59,52 @@ export function logout() {
 
 // Dossiers et documents
 
-// Renvoie { folder, path, folders, documents } ; folderId vide = racine.
-export function getFolder(folderId) {
-	if (USE_MOCKS) {
-		return mock.getFolder(folderId);
-	}
-	return request('GET', `/api/folders/${folderId || 'root'}`);
+// Pas encore de route côté back pour les dossiers et l'upload
+async function notAvailableYet() {
+	throw new Error('Pas encore disponible côté serveur.');
 }
 
-export function createFolder(name, parentId) {
-	if (USE_MOCKS) {
-		return mock.createFolder(name, parentId);
-	}
-	return request('POST', '/api/folders', { name, parent_id: parentId });
+// Renvoie { folder, path, folders, documents }. Sans dossiers, tous les fichiers sont à la racine.
+export async function getFolder() {
+	const documents = await request('GET', '/files');
+	return { folder: null, path: [], folders: [], documents };
 }
 
-export function deleteFolder(id) {
-	if (USE_MOCKS) {
-		return mock.deleteFolder(id);
-	}
-	return request('DELETE', `/api/folders/${id}`);
+export function createFolder() {
+	return notAvailableYet();
 }
 
+export function deleteFolder() {
+	return notAvailableYet();
+}
+
+// TODO: created_by / updated_by viendront du token quand l'auth sera faite côté back
 export function createDocument(name, folderId) {
-	if (USE_MOCKS) {
-		return mock.createDocument(name, folderId);
-	}
-	return request('POST', '/api/documents', { name, folder_id: folderId });
+	return request('POST', '/files', { name, folder_id: folderId, created_by: session.user.id });
 }
 
-export function uploadFile(file, folderId) {
-	if (USE_MOCKS) {
-		return mock.uploadFile(file, folderId);
-	}
-	return request('POST', '/api/documents/upload', fileForm(file, { folder_id: folderId }));
+export function uploadFile() {
+	return notAvailableYet();
 }
 
 export function getDocument(id) {
-	if (USE_MOCKS) {
-		return mock.getDocument(id);
-	}
-	return request('GET', `/api/documents/${id}`);
+	return request('GET', `/files/${id}`);
 }
 
 export function saveDocument(id, content) {
-	if (USE_MOCKS) {
-		return mock.saveDocument(id, content);
-	}
-	return request('PATCH', `/api/documents/${id}`, { content });
+	return request('PUT', `/files/${id}`, { content, updated_by: session.user.id });
 }
 
-export function replaceFile(id, file) {
-	if (USE_MOCKS) {
-		return mock.replaceFile(id, file);
-	}
-	return request('PUT', `/api/documents/${id}/file`, fileForm(file));
+export function replaceFile() {
+	return notAvailableYet();
 }
 
 export function deleteDocument(id) {
-	if (USE_MOCKS) {
-		return mock.deleteDocument(id);
-	}
-	return request('DELETE', `/api/documents/${id}`);
+	return request('DELETE', `/files/${id}`);
 }
 
 export function fileUrl(doc) {
-	if (USE_MOCKS) {
-		return doc.file_path;
-	}
-	return `${API_URL}/api/documents/${doc.id}/file`;
+	return `${API_URL}/files/${doc.id}/file`;
 }
 
 // Utilisateurs (admin)
