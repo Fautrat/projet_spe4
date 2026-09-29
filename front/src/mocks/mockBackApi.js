@@ -43,7 +43,7 @@ let documents = [
 		content: 'Un 20 naturel double les dégâts.\nUn 1 naturel fait tomber votre arme.\nLe maître du jeu a toujours raison.',
 		file_path: null,
 		updated_at: '2026-09-25T20:30:00',
-		updated_by_name: 'Aldric Montfer',
+		updated_by_name: 'Maitre Jedi',
 	},
 	{
 		id: 2,
@@ -52,7 +52,7 @@ let documents = [
 		content: 'Vieux dragon rouge endormi sous la montagne.\nPoints faibles : l\'orgueil et les chants elfiques.',
 		file_path: null,
 		updated_at: '2026-09-22T10:40:00',
-		updated_by_name: 'Lyra Sombrebois',
+		updated_by_name: 'Jeune Padawan',
 	},
 	{
 		id: 3,
@@ -61,7 +61,7 @@ let documents = [
 		content: 'Le groupe se rencontre à la taverne. Une bagarre éclate, le barde s\'enfuit avec la caisse.',
 		file_path: null,
 		updated_at: '2026-09-26T21:15:00',
-		updated_by_name: 'Aldric Montfer',
+		updated_by_name: 'Maitre Jedi',
 	},
 ];
 
