@@ -12,6 +12,21 @@ Application collaborative d'édition de documents en temps réel.
 
 Node.js 20.19 ou supérieur.
 
+## Base de données
+
+MySQL 8.4 tourne dans Docker. À la racine du projet :
+
+```bash
+docker compose up -d
+```
+
+- Au premier démarrage, le conteneur crée les tables à partir de `database/init/tables.sql`.
+- Les identifiants sont dans le `.env` de la racine. `back/.env` doit reprendre les mêmes `DB_DATABASE`, `DB_USER` et `DB_PASSWORD`.
+- Port 3306 déjà pris : changer `DB_PORT` dans le `.env` de la racine et dans `back/.env`, par exemple `3307`.
+- Consulter la base : `docker exec -it spe4-mysql mysql -u <DB_USER> -p`, ou un logiciel comme MySQL Workbench ou DBeaver sur `localhost` et le port `DB_PORT`.
+- Arrêter : `docker compose down`. Les données sont conservées.
+- Repartir d'une base vide et rejouer le script SQL : `docker compose down -v`, puis `docker compose up -d`.
+
 ## Lancement
 
 Dans trois terminaux séparés :
@@ -49,8 +64,8 @@ Tant que `VITE_USE_MOCKS` ne vaut pas `false` dans `front/.env`, le front tourne
 
 | Rôle | Email | Mot de passe |
 |---|---|---|
-| Admin (maître du jeu) | mj@grimoire.fr | admin1234 |
-| Utilisateur (aventurier) | aventurier@grimoire.fr | user1234 |
+| Admin (maître du jeu) | mj@test.fr | admin1234 |
+| Utilisateur (aventurier) | aventurier@test.fr | user1234 |
 
 ## Convention de commit
 

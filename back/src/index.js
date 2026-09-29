@@ -6,6 +6,7 @@ import morgan from 'morgan';
 import authRoutes from './routes/authRoutes.js';
 import filesRoutes from './routes/filesRoutes.js';
 import mainRoutes from './routes/mainRoutes.js';
+import { checkDatabaseConnection } from './config/db.js';
 
 
 // Passport initialisation
@@ -33,6 +34,13 @@ app.use(morgan(":date[Europe/Paris] \: :remote-addr - :method :url | :status | :
 app.use('/', mainRoutes)
 app.use('/auth', authRoutes)
 app.use('/files', filesRoutes)
+
+// Database check
+try {
+	await checkDatabaseConnection();
+} catch (err) {
+	console.error(`Connexion à MySQL impossible (${err.code || err.message}) : vérifiez que le conteneur tourne et les variables DB_* de back/.env.`);
+}
 
 // Server starting
 app.listen(PORT, () => {

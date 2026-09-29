@@ -1,0 +1,57 @@
+-- Schéma de la base, exécuté automatiquement par le conteneur MySQL au premier démarrage.
+-- Pour le rejouer après une modification : docker compose down -v, puis docker compose up -d.
+
+SET NAMES utf8mb4;
+
+CREATE TABLE users (
+	id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	email VARCHAR(255) NOT NULL UNIQUE,
+	password_hash VARCHAR(255) NOT NULL,
+	first_name VARCHAR(100) NOT NULL,
+	last_name VARCHAR(100) NOT NULL,
+	role ENUM('user', 'admin') NOT NULL DEFAULT 'user',
+	is_blocked BOOLEAN NOT NULL DEFAULT FALSE,
+	totp_secret VARCHAR(255) NULL,
+	totp_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE folders (
+	id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	name VARCHAR(255) NOT NULL,
+	parent_id INT UNSIGNED NULL,
+	created_by INT UNSIGNED NOT NULL,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	FOREIGN KEY (parent_id) REFERENCES folders(id) ON DELETE CASCADE,
+	FOREIGN KEY (created_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE documents (
+	id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	folder_id INT UNSIGNED NULL,
+	name VARCHAR(255) NOT NULL,
+	content LONGTEXT NULL,
+	file_path VARCHAR(500) NULL,
+	mime_type VARCHAR(100) NULL,
+	file_size INT UNSIGNED NULL,
+	created_by INT UNSIGNED NOT NULL,
+	updated_by INT UNSIGNED NOT NULL,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE CASCADE,
+	FOREIGN KEY (created_by) REFERENCES users(id),
+	FOREIGN KEY (updated_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE document_members (
+	document_id INT UNSIGNED NOT NULL,
+	user_id INT UNSIGNED NOT NULL,
+	invited_by INT UNSIGNED NOT NULL,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (document_id, user_id),
+	FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE,
+	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+	FOREIGN KEY (invited_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

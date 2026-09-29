@@ -1,0 +1,26 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: spe4-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      # Mot de passe root généré au hasard : le back utilise DB_USER, jamais root.
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - spe4_mysql:/var/lib/mysql
+      # Initialisation de la base de données avec le script SQL fourni
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  spe4_mysql:
