@@ -1,0 +1,5 @@
+À faire
+
+- Mettre en place la BDD
+- Authentification
+- Appel audio
