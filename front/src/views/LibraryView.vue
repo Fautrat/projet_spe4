@@ -46,6 +46,7 @@ async function run(action) {
 function addFolder() {
 	const name = newName.value.trim();
 	if (!name) {
+		error.value = 'Donnez d\'abord un nom dans le champ à gauche.';
 		return;
 	}
 	run(async () => {
@@ -57,6 +58,7 @@ function addFolder() {
 async function addDocument() {
 	const name = newName.value.trim();
 	if (!name) {
+		error.value = 'Donnez d\'abord un nom dans le champ à gauche.';
 		return;
 	}
 	try {
