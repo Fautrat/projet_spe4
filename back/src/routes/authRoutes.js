@@ -45,7 +45,7 @@ authRoutes.post('/login', async (req, res) => {
             is_blocked: account.is_blocked,
         };
         const token = jwt.sign(user, process.env.JWT_SECRET, {expiresIn: '3d'});
-        res.json({user, token});
+        res.status(201).json({user, token});
     }
     catch(err){
         console.error(err);
