@@ -15,5 +15,8 @@
 		"express": "^5.1.0",
 		"morgan": "^1.12.1",
 		"mysql2": "^3.24.4"
+	},
+	"allowScripts": {
+		"bcrypt@6.0.0": true
 	}
 }
