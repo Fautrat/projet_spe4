@@ -37,7 +37,7 @@ authRoutes.post('/login', async (req, res) => {
         if(!account || !(await bcrypt.compare(password, account.password_hash))){return res.status(401).json({message: "Identifiants incorrects."});};
         if(account.is_blocked){return res.status(403).json({message: "Ce compte a été banni."});};
 
-        // Singing the user in
+        // Signing the user in
         const user = {
             id:         account.id,
             email:      account.email,
@@ -88,7 +88,7 @@ authRoutes.post('/register', async (req, res) => {
         );
         const account = rows[0];
 
-        // Singing the new user in
+        // Signing the new user in
         const user = {
             id:         account.id,
             email:      email,
