@@ -64,17 +64,38 @@ authRoutes.post('/register', async (req, res) => {
         !password   ||
         password.length < 8
     ){
-        return res.status(400).json({message: "Email et mot de passe de plus de 8 caractères requis."});
+        return res.status(400).json({message: "Prénom, nom, email, et/ou mot de passe de plus de 8 caractères requis."});
     };
 
     // Inserting the new user into the database
     try{
-        const hash = await bcrypt.hash(password, 12);
+        // Hashing user's password
+        const password_hash = await bcrypt.hash(password, 12);
+
+        // Inserting the new user into the database
         await db.execute(
             'INSERT INTO users (first_name, last_name, email, password_hash) VALUES (?, ?, ?, ?)',
-            [first_name, last_name, email, hash]
+            [first_name, last_name, email, password_hash]
         );
-        res.status(201).json({message: "Compte créé avec succès !"});
+
+        // Getting the new user's ID
+        const [rows] = await db.execute(
+            'SELECT id FROM users WHERE email = ? AND password_hash = ?;',
+            [email, password_hash]
+        );
+        const account = rows[0];
+
+        // Singing the new user in
+        const user = {
+            id:         account.id,
+            email:      email,
+            first_name: first_name,
+            last_name:  last_name,
+            role:       'user',
+            is_blocked: false,
+        };
+        const token = jwt.sign(user, process.env.JWT_SECRET, {expiresIn: '3d'});
+        res.status(201).json({user, token});
     }
     catch(err){
         if(err.code === 'ER_DUP_ENTRY'){
