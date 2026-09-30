@@ -25,8 +25,8 @@ Règles communes : préfixe `/api`, JSON, noms des colonnes de la base, token da
 
 Authentification
 
-- [ ] `POST /api/auth/register` (public) : `{ first_name, last_name, email, password }` → `{ user, token }`, rôle toujours `user`
-- [ ] `POST /api/auth/login` (public) : `{ email, password }` → `{ user, token }`, ou `{ requires_2fa: true, temp_token }` si 2FA active
+- [x] `POST /api/auth/register` (public) : `{ first_name, last_name, email, password }` → `{ user, token }`, rôle toujours `user`
+- [x] `POST /api/auth/login` (public) : `{ email, password }` → `{ user, token }`, ou `{ requires_2fa: true, temp_token }` si 2FA active
 - [ ] `POST /api/auth/2fa/verify` (public) : `{ temp_token, code }` → `{ user, token }`
 - [ ] `POST /api/auth/logout` (connecté)
 

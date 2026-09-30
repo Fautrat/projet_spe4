@@ -1,5 +1,6 @@
-import { Router }               from 'express';
-import { conn, getUserRole }    from '../config/db.js';
+import { Router }       from 'express';
+import { conn }         from '../config/db.js';
+import { getUserRole }  from '../controllers/userController.js';
 
 const mainRoutes = Router();
 
@@ -27,12 +28,6 @@ const index = async (req, res) => {
     });
 };
 mainRoutes.get('/', index);
-
-// Sign-up route
-//TODO
-
-// Login route
-//TODO
 
 // Logout route
 const logout = (req, res) => {res.redirect('/');};
