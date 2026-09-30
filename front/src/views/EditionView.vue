@@ -1,9 +1,11 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, reactive, ref } from 'vue';
+import VoiceCall from '../components/VoiceCall.vue';
 import { getFolder } from '../services/backApi.js';
 import { connect, me } from '../services/websocket.js';
 import { session } from '../stores/session.js';
 import { diff, shift } from '../utils/textDiff.js';
+import { createVoice } from '../webRTC/voice.js';
 
 // Édition : on choisit un document et on l'édite à plusieurs, avec les curseurs des autres.
 
@@ -26,8 +28,13 @@ const socket = connect(onMessage);
 socket.onopen = () => (connected.value = true);
 socket.onclose = () => (connected.value = false);
 
-function onMessage(message) {
+const voice = createVoice(socket);
+
+async function onMessage(message) {
+	if (await voice.onMessage(message)) return;
+
 	if (message.type === 'joined') {
+		voice.reset();
 		current.value = message.id;
 		text.value = message.content;
 		for (const id in cursors) delete cursors[id];
@@ -47,6 +54,7 @@ function onMessage(message) {
 }
 
 function join(file) {
+	voice.stop();
 	socket.sendJson({ type: 'join', id: file.id, userId: session.user?.id });
 }
 
@@ -102,7 +110,10 @@ const parts = computed(() => {
 	return result;
 });
 
-onBeforeUnmount(() => socket.close());
+onBeforeUnmount(() => {
+	voice.stop();
+	socket.close();
+});
 </script>
 
 <template>
@@ -122,6 +133,8 @@ onBeforeUnmount(() => socket.close());
 				@click="join(file)"
 			>{{ file.name }}</button>
 		</div>
+
+		<VoiceCall v-if="current" :voice="voice" />
 
 		<div class="ws-editor parchment">
 			<!-- sur une seule ligne : un espace en trop décalerait les curseurs -->

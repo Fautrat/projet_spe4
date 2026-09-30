@@ -1,11 +1,13 @@
 <script setup>
-import { computed, nextTick, onBeforeUnmount, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, reactive, ref, shallowRef } from 'vue';
 import { useRoute } from 'vue-router';
+import VoiceCall from '../components/VoiceCall.vue';
 import { fileUrl, getDocument, replaceFile, saveDocument } from '../services/backApi.js';
-import { connect } from '../services/websocket.js';
+import { connect, me } from '../services/websocket.js';
 import { session } from '../stores/session.js';
 import { formatDate, formatSize } from '../utils/format.js';
 import { diff, shift } from '../utils/textDiff.js';
+import { createVoice } from '../webRTC/voice.js';
 
 const route = useRoute();
 
@@ -15,6 +17,8 @@ const status = ref('');
 const saveFailed = ref(false);
 const error = ref('');
 const textarea = ref(null);
+const cursorsDiv = ref(null);
+const cursors = reactive({}); // id du client -> { name, color, index }
 
 let saveTimer = null;
 
@@ -23,19 +27,31 @@ let saveTimer = null;
 // Si le websocket ne marche pas, on sauvegarde nous-mêmes avec l'API.
 let socket = null;
 let joined = false;
+const voice = shallowRef(null); // appel audio avec ceux qui ont le même document ouvert
 
 function openSocket() {
 	socket = connect(onMessage);
 	socket.onopen = () => socket.sendJson({ type: 'join', id: doc.value.id, userId: session.user?.id });
 	socket.onclose = () => (joined = false);
+	voice.value = createVoice(socket);
 }
 
-function onMessage(message) {
+async function onMessage(message) {
+	if (await voice.value.onMessage(message)) return;
+
 	if (message.type === 'joined') {
 		joined = true;
+		for (const id in cursors) delete cursors[id];
 		receiveContent(message.content);
+		sendCursor();
 	} else if (message.type === 'content') {
 		receiveContent(message.text);
+	} else if (message.type === 'cursor') {
+		cursors[message.from] = { name: message.name, color: message.color, index: message.index };
+	} else if (message.type === 'user-joined') {
+		sendCursor();
+	} else if (message.type === 'cursor-leave') {
+		delete cursors[message.from];
 	} else if (message.type === 'saved') {
 		saveFailed.value = false;
 		status.value = 'Enregistré';
@@ -55,10 +71,42 @@ function receiveContent(newText) {
 	const end = shift(el.selectionEnd, change);
 
 	text.value = newText;
+	moveCursors(change);
 	nextTick(() => {
 		if (document.activeElement === el) el.setSelectionRange(start, end);
 	});
 }
+
+function moveCursors(change) {
+	for (const cursor of Object.values(cursors)) {
+		cursor.index = shift(cursor.index, change);
+	}
+}
+
+function sendCursor() {
+	if (!joined) return;
+	socket.sendJson({ type: 'cursor', name: me.name, color: me.color, index: textarea.value.selectionStart });
+}
+
+function syncScroll() {
+	cursorsDiv.value.scrollTop = textarea.value.scrollTop;
+}
+
+// Les curseurs sont dans une div derrière le textarea avec le même texte en transparent.
+// On découpe le texte à la position de chaque curseur pour pouvoir insérer une barre.
+const parts = computed(() => {
+	const list = Object.entries(cursors).sort((a, b) => a[1].index - b[1].index);
+	const result = [];
+	let last = 0;
+
+	for (const [id, cursor] of list) {
+		result.push({ key: 'text-' + id, text: text.value.slice(last, cursor.index) });
+		result.push({ key: 'cursor-' + id, cursor });
+		last = cursor.index;
+	}
+	result.push({ key: 'end', text: text.value.slice(last) + '\n' });
+	return result;
+});
 
 const backLink = computed(() => {
 	if (doc.value && doc.value.folder_id) {
@@ -93,11 +141,14 @@ async function save() {
 	}
 }
 
-function onInput() {
+function onInput(event) {
+	moveCursors(diff(text.value, event.target.value));
+	text.value = event.target.value;
 	status.value = 'Modifications en cours…';
 
 	if (joined) {
 		socket.sendJson({ type: 'content', text: text.value });
+		sendCursor();
 	} else {
 		clearTimeout(saveTimer);
 		saveTimer = setTimeout(save, 1000);
@@ -118,6 +169,7 @@ async function onReplace(event) {
 }
 
 onBeforeUnmount(() => {
+	voice.value?.stop();
 	socket?.close();
 	if (saveTimer) {
 		clearTimeout(saveTimer);
@@ -141,14 +193,23 @@ load();
 
 		<p v-if="error" class="error">{{ error }}</p>
 
-		<textarea
-			v-if="!doc.file_path"
-			ref="textarea"
-			v-model="text"
-			class="parchment editor"
-			placeholder="Il était une fois…"
-			@input="onInput"
-		></textarea>
+		<VoiceCall v-if="voice" :voice="voice" />
+
+		<div v-if="!doc.file_path" class="parchment doc-editor">
+			<!-- sur une seule ligne : un espace en trop décalerait les curseurs -->
+			<div ref="cursorsDiv" class="doc-layer doc-cursors"><template v-for="part in parts" :key="part.key"><span v-if="part.cursor" class="doc-cursor" :style="{ borderColor: part.cursor.color }"><span class="doc-cursor-name" :style="{ background: part.cursor.color }">{{ part.cursor.name }}</span></span><template v-else>{{ part.text }}</template></template></div>
+			<textarea
+				ref="textarea"
+				class="doc-layer doc-textarea"
+				:value="text"
+				placeholder="Il était une fois…"
+				@input="onInput"
+				@keyup="sendCursor"
+				@click="sendCursor"
+				@focus="sendCursor"
+				@scroll="syncScroll"
+			></textarea>
+		</div>
 
 		<div v-else class="parchment file">
 			<img v-if="isImage" :src="fileUrl(doc)" :alt="doc.name" />
@@ -173,3 +234,54 @@ load();
 		<RouterLink :to="{ name: 'library' }">← Retour à la bibliothèque</RouterLink>
 	</section>
 </template>
+
+<style scoped>
+/* textarea et curseurs l'un sur l'autre : même police et même padding obligatoire */
+.doc-editor {
+	position: relative;
+	height: 60vh;
+}
+
+.doc-layer {
+	position: absolute;
+	inset: 0;
+	margin: 0;
+	padding: 2rem 2.5rem;
+	border: none;
+	box-sizing: border-box;
+	font-family: var(--text);
+	font-size: 1.15rem;
+	line-height: 1.7;
+	letter-spacing: normal;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+	overflow-y: scroll;
+}
+
+.doc-textarea {
+	background: transparent;
+	color: var(--ink);
+	resize: none;
+}
+
+.doc-cursors {
+	color: transparent;
+	pointer-events: none;
+}
+
+.doc-cursor {
+	position: relative;
+	border-left: 2px solid;
+	margin-left: -1px;
+}
+
+.doc-cursor-name {
+	position: absolute;
+	bottom: 100%;
+	left: -2px;
+	padding: 0 4px;
+	color: white;
+	font: 11px/1.4 sans-serif;
+	white-space: nowrap;
+}
+</style>

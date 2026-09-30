@@ -5,7 +5,10 @@ const colors = ['#b03a2e', '#1e8449', '#2471a3', '#d68910', '#7d3c98', '#c2185b'
 
 // nom et couleur de notre curseur chez les autres
 export const me = {
-	name: session.user ? `${session.user.first_name} ${session.user.last_name}` : 'Anonyme',
+	// relu à chaque envoi : l'utilisateur peut se connecter après le chargement de la page
+	get name() {
+		return session.user ? `${session.user.first_name} ${session.user.last_name}` : 'Anonyme';
+	},
 	color: colors[Math.floor(Math.random() * colors.length)],
 };
 
