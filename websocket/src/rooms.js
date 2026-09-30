@@ -9,15 +9,27 @@ export function joinRoom(ws, name) {
 }
 
 export function leaveRoom(ws) {
-	const room = rooms.get(ws.room);
+	const roomName = ws.room;
+	const room = rooms.get(roomName);
 	if (!room) return;
 
 	// pour que les autres enlèvent son curseur
 	sendToRoom(ws.room, { type: 'cursor-leave', from: ws.id }, ws);
 
 	room.delete(ws);
-	if (room.size === 0) rooms.delete(ws.room);
+	if (room.size === 0) {
+		rooms.delete(roomName);
+	} else {
+		sendToRoom(roomName, { type: 'room-users', users: getRoomUsers(roomName) });
+	}
 	ws.room = null;
+}
+
+export function getRoomUsers(name) {
+	const room = rooms.get(name);
+	if (!room) return [];
+
+	return [...room].map((client) => ({ id: client.id, name: client.userName || 'Anonyme' }));
 }
 
 export function roomExists(name) {
