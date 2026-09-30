@@ -25,8 +25,7 @@ import { checkDatabaseConnection } from './config/db.js';
 const PORT 			= Number(process.env.PORT) || 3000;
 const CLIENT_URL	= process.env.CLIENT_URL || 'http://localhost:5173';
 const app 			= express();
-// Also allow the front opened from a phone on the local network
-app.use(cors({ origin: CLIENT_URL}));
+app.use(cors({ origin: CLIENT_URL }));
 app.use(express.json());
 app.get('/api/health', (req, res) => {res.json({ status: 'ok' });});
 app.use(morgan(":date[Europe/Paris] \: :remote-addr - :method :url | :status | :response-time ms | :res[content-length]"));

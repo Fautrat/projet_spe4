@@ -66,7 +66,7 @@ async function notAvailableYet() {
 
 // Renvoie { folder, path, folders, documents }. Sans dossiers, tous les fichiers sont à la racine.
 export async function getFolder() {
-	const documents = await request('GET', '/files');
+	const documents = await request('GET', `/files?user_id=${session.user.id}`);
 	return { folder: null, path: [], folders: [], documents };
 }
 
@@ -88,7 +88,7 @@ export function uploadFile() {
 }
 
 export function getDocument(id) {
-	return request('GET', `/files/${id}`);
+	return request('GET', `/files/${id}?user_id=${session.user.id}`);
 }
 
 export function saveDocument(id, content) {
@@ -101,6 +101,20 @@ export function replaceFile() {
 
 export function deleteDocument(id) {
 	return request('DELETE', `/files/${id}`);
+}
+
+// Invités d'un document
+
+export function getMembers(id) {
+	return request('GET', `/files/${id}/members`);
+}
+
+export function inviteMember(id, email) {
+	return request('POST', `/files/${id}/members`, { email, invited_by: session.user.id });
+}
+
+export function removeMember(id, userId) {
+	return request('DELETE', `/files/${id}/members/${userId}`);
 }
 
 export function fileUrl(doc) {

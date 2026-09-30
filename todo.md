@@ -71,8 +71,8 @@ Déclarer `/api/users/me` avant `/api/users/:id`, sinon Express prend `me` pour 
 - [x] Connexion, inscription, profil, bibliothèque, éditeur, administration (sur mocks)
 - [ ] Brancher le vrai back (`VITE_USE_MOCKS=false`), puis supprimer les mocks
 - [ ] Inviter une personne sur un document
-- [ ] Édition à plusieurs en temps réel
-- [ ] Reprise des modifications après une déconnexion
+- [X] Édition à plusieurs en temps réel
+- [X] Reprise des modifications après une déconnexion
 - [ ] Appel audio avec une personne invitée
 - [ ] Bonus : appel à plusieurs, vidéo, curseurs des autres, messagerie instantanée
 
