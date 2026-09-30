@@ -15,6 +15,7 @@ const current = ref(null); // id du document ouvert
 const savedAt = ref('');
 const text = ref('');
 const cursors = reactive({}); // id du client -> { name, color, index }
+const roomUsers = ref([]);
 const messages = ref([]);
 
 const textarea = ref(null);
@@ -37,7 +38,10 @@ async function onMessage(message) {
 		voice.reset();
 		current.value = message.id;
 		text.value = message.content;
+		roomUsers.value = [];
 		for (const id in cursors) delete cursors[id];
+	} else if (message.type === 'room-users') {
+		roomUsers.value = message.users;
 	} else if (message.type === 'content') {
 		receiveContent(message.text);
 	} else if (message.type === 'cursor') {
@@ -55,7 +59,7 @@ async function onMessage(message) {
 
 function join(file) {
 	voice.stop();
-	socket.sendJson({ type: 'join', id: file.id, userId: session.user?.id });
+	socket.sendJson({ type: 'join', id: file.id, userId: session.user?.id, userName: me.name });
 }
 
 function moveCursors(change) {
@@ -132,6 +136,12 @@ onBeforeUnmount(() => {
 				:class="{ 'btn-ghost': file.id !== current }"
 				@click="join(file)"
 			>{{ file.name }}</button>
+		</div>
+		<div v-if="current" class="room-users">
+			<strong>Dans cette room ({{ roomUsers.length }})</strong>
+			<ul>
+				<li v-for="user in roomUsers" :key="user.id">{{ user.name }}</li>
+			</ul>
 		</div>
 
 		<VoiceCall v-if="current" :voice="voice" />

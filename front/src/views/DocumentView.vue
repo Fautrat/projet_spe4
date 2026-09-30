@@ -19,6 +19,8 @@ const error = ref('');
 const textarea = ref(null);
 const cursorsDiv = ref(null);
 const cursors = reactive({}); // id du client -> { name, color, index }
+const roomUsers = ref([]);
+const clientId = ref(null);
 
 let saveTimer = null;
 
@@ -31,7 +33,7 @@ const voice = shallowRef(null); // appel audio avec ceux qui ont le même docume
 
 function openSocket() {
 	socket = connect(onMessage);
-	socket.onopen = () => socket.sendJson({ type: 'join', id: doc.value.id, userId: session.user?.id });
+	socket.onopen = () => socket.sendJson({ type: 'join', id: doc.value.id, userId: session.user?.id, userName: me.name });
 	socket.onclose = () => (joined = false);
 	voice.value = createVoice(socket);
 }
@@ -41,9 +43,13 @@ async function onMessage(message) {
 
 	if (message.type === 'joined') {
 		joined = true;
+		clientId.value = message.clientId;
+		roomUsers.value = [];
 		for (const id in cursors) delete cursors[id];
 		receiveContent(message.content);
 		sendCursor();
+	} else if (message.type === 'room-users') {
+		roomUsers.value = message.users;
 	} else if (message.type === 'content') {
 		receiveContent(message.text);
 	} else if (message.type === 'cursor') {
@@ -185,7 +191,15 @@ load();
 		<RouterLink :to="backLink" class="back">← Retour à la bibliothèque</RouterLink>
 
 		<div class="doc-header">
-			<h1>{{ doc.name }}</h1>
+			<div class="doc-title-room">
+				<h1>{{ doc.name }}</h1>
+				<div v-if="joined" class="room-users">
+					<strong>Dans cette room ({{ roomUsers.length }})</strong>
+					<ul>
+						<li v-for="user in roomUsers" :key="user.id" :class="{ 'room-user-self': user.id === clientId }">{{ user.name }}</li>
+					</ul>
+				</div>
+			</div>
 			<span class="status">{{ status }}</span>
 			<button v-if="saveFailed" class="btn btn-ghost" @click="save">Réessayer</button>
 		</div>
@@ -236,6 +250,44 @@ load();
 </template>
 
 <style scoped>
+.doc-title-room {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 1rem;
+}
+
+.room-users {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 0.4rem 0.75rem;
+	padding-left: 0.8rem;
+	border-left: 1px solid var(--gold);
+	font-size: 0.9rem;
+}
+
+.room-users ul {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.room-users li {
+	padding: 0.1rem 0.5rem;
+	border: 1px solid rgba(212, 174, 85, 0.5);
+	border-radius: 999px;
+}
+
+.room-users li.room-user-self {
+	background: var(--gold);
+	color: var(--leather);
+	font-weight: 700;
+}
+
 /* textarea et curseurs l'un sur l'autre : même police et même padding obligatoire */
 .doc-editor {
 	position: relative;

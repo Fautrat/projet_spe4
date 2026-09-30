@@ -30,4 +30,19 @@ const status = computed(() => {
 
 		<audio v-for="(stream, id) in state.streams" :key="id" :srcObject.prop="stream" autoplay></audio>
 	</div>
+	
+	<!-- Liste des appels -->
+	<div class="call-list">
+		<div
+			v-for="call in calls"
+			:key="call.id"
+			class="call-item"
+		>
+			<div>
+				<strong>{{ call.name }}</strong>
+				<span>{{ call.time }}</span>
+			</div>
+
+		</div>
+	</div>
 </template>

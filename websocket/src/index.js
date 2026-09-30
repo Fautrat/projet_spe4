@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { randomUUID } from 'node:crypto';
 import { WebSocketServer } from 'ws';
-import { joinRoom, leaveRoom, sendToRoom, roomExists } from './rooms.js';
+import { getRoomUsers, joinRoom, leaveRoom, sendToRoom, roomExists } from './rooms.js';
 import { docs, getDoc, saveDoc } from './documents.js';
 
 const PORT = Number(process.env.PORT) || 3001;
@@ -61,9 +61,11 @@ wss.on('connection', (ws) => {
 
 			// TODO: prendre l'id dans le token quand l'auth sera faite
 			ws.userId = message.userId;
+			ws.userName = typeof message.userName === 'string' ? message.userName : 'Anonyme';
 			joinRoom(ws, message.id);
 
-			ws.send(JSON.stringify({ type: 'joined', id: message.id, content: doc.text }));
+			ws.send(JSON.stringify({ type: 'joined', id: message.id, clientId: ws.id, content: doc.text }));
+			sendToRoom(ws.room, { type: 'room-users', users: getRoomUsers(ws.room) });
 			sendToRoom(ws.room, { type: 'user-joined' }, ws);
 			return;
 		}
