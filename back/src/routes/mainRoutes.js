@@ -29,12 +29,6 @@ const index = async (req, res) => {
 };
 mainRoutes.get('/', index);
 
-// Sign-up route
-//TODO
-
-// Login route
-//TODO
-
 // Logout route
 const logout = (req, res) => {res.redirect('/');};
 mainRoutes.get('/logout', logout);
