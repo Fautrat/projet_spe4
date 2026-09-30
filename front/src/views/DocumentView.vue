@@ -1,6 +1,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, reactive, ref, shallowRef } from 'vue';
 import { useRoute } from 'vue-router';
+import DocumentMembers from '../components/DocumentMembers.vue';
 import VoiceCall from '../components/VoiceCall.vue';
 import { fileUrl, getDocument, replaceFile, saveDocument } from '../services/backApi.js';
 import { connect, me } from '../services/websocket.js';
@@ -194,6 +195,7 @@ load();
 		<p v-if="error" class="error">{{ error }}</p>
 
 		<VoiceCall v-if="voice" :voice="voice" />
+		<DocumentMembers :document-id="doc.id" />
 
 		<div v-if="!doc.file_path" class="parchment doc-editor">
 			<!-- sur une seule ligne : un espace en trop décalerait les curseurs -->
