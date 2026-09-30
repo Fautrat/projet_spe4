@@ -16,9 +16,11 @@ const authRoutes = Router();
 //     (req, res) => res.redirect('/')
 // );
 
+// Sign-in route
 authRoutes.post('/login', async (req, res) => {
     const {email, password} = req.body || {};
 
+    // Checking validity of given informations
     if(typeof email !== 'string' || !email || typeof password !== 'string' || !password){
         return res.status(400).json({ message: "Email et mot de passe requis." });
     };
@@ -53,6 +55,7 @@ authRoutes.post('/login', async (req, res) => {
     };
 });
 
+// Registration route
 authRoutes.post('/register', async (req, res) => {
     const {first_name, last_name, email, password} = req.body;
 
@@ -105,4 +108,5 @@ authRoutes.post('/register', async (req, res) => {
     };
 });
 
+// Exporting all the routes
 export default authRoutes;
