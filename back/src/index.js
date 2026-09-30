@@ -31,9 +31,9 @@ app.get('/api/health', (req, res) => {res.json({ status: 'ok' });});
 app.use(morgan(":date[Europe/Paris] \: :remote-addr - :method :url | :status | :response-time ms | :res[content-length]"));
 
 // Routes
-app.use('/', mainRoutes)
-app.use('/auth', authRoutes)
-app.use('/files', filesRoutes)
+app.use('/api', mainRoutes)
+app.use('/api/auth', authRoutes)
+app.use('/api/files', filesRoutes)
 
 // Database check
 try {
