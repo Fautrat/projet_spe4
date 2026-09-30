@@ -5,19 +5,20 @@
 - [x] Docker Compose MySQL
 - [x] Création des tables au premier démarrage
 - [x] Connexion du back à MySQL
-- [ ] Script pour créer des comptes test 
+- [x] Comptes de test (`database/init/users-test.sql`)
 
 ## Back
 
-- [ ] Hachage des mots de passe (bcrypt) et génération du token
-- [ ] Middlewares : connecté, admin, compte non bloqué
-- [ ] Upload des fichiers (multer), suppression sur le disque avec le document ou le dossier
-- [ ] Vérifier l'accès à chaque document (propriétaire ou invité)
-- [ ] Aligner les routes existantes (`/files`, `{ error }`) sur la liste ci-dessous
+- [x] Hachage des mots de passe (bcrypt) et token JWT
+- [x] Middlewares : `auth.js` (token), `access.js` (compte relu en base, connecté, admin), `upload.js`, `errors.js`
+- [x] Upload des fichiers (multer), suppression sur le disque avec le document ou le dossier
+- [x] Visibilité : on ne voit que ses documents et dossiers et ceux où on est invité (admins compris)
+- [ ] 2FA à la connexion : renvoyer `{ requires_2fa: true, temp_token }` si la 2FA est active
+- [ ] Limiter les tentatives de connexion
 
 ### Routes attendues par le front
 
-Règles communes : préfixe `/api`, JSON, noms des colonnes de la base, token dans `Authorization: Bearer <token>`, erreurs en `{ message }` en français, jamais de `password_hash` ni de `totp_secret` dans une réponse.
+Règles communes : JSON, noms des colonnes de la base, token dans `Authorization: Bearer <token>`, erreurs en `{ message }` en français, jamais de `password_hash` ni de `totp_secret` dans une réponse.
 
 `user` = `{ id, email, first_name, last_name, role, is_blocked, totp_enabled }`
 `document` = `{ id, folder_id, name, content, file_path, mime_type, file_size, updated_at, updated_by_name }`
@@ -25,54 +26,56 @@ Règles communes : préfixe `/api`, JSON, noms des colonnes de la base, token da
 
 Authentification
 
-- [x] `POST /api/auth/register` (public) : `{ first_name, last_name, email, password }` → `{ user, token }`, rôle toujours `user`
-- [x] `POST /api/auth/login` (public) : `{ email, password }` → `{ user, token }`, ou `{ requires_2fa: true, temp_token }` si 2FA active
-- [ ] `POST /api/auth/2fa/verify` (public) : `{ temp_token, code }` → `{ user, token }`
-- [ ] `POST /api/auth/logout` (connecté)
+- [x] `POST /api/auth/register` (public) : `{ first_name, last_name, email, password }` :`{ user, token }`, rôle toujours `user`
+- [x] `POST /api/auth/login` (public) : `{ email, password }` :`{ user, token }`
+- [ ] `POST /api/auth/2fa/verify` (public) : `{ temp_token, code }` :`{ user, token }`
+- [x] Déconnexion côté front (le token JWT est simplement oublié)
 
-Profil
+Profil (encore sur mocks côté front)
 
-- [ ] `PATCH /api/users/me` (connecté) : `{ first_name, last_name, email }` → `user`
+- [ ] `PATCH /api/users/me` (connecté) : `{ first_name, last_name, email }` :`user`
 - [ ] `PATCH /api/users/me/password` (connecté) : `{ current_password, new_password }`
-- [ ] `POST /api/auth/2fa/setup` (connecté) → `{ secret, qr_code }`, QR code en data URL
-- [ ] `POST /api/auth/2fa/enable` (connecté) : `{ code }` → `user`
-- [ ] `POST /api/auth/2fa/disable` (connecté) : `{ code }` → `user`
+- [ ] `POST /api/auth/2fa/setup` (connecté) :`{ secret, qr_code }`, QR code en data URL
+- [ ] `POST /api/auth/2fa/enable` (connecté) : `{ code }` :`user`
+- [ ] `POST /api/auth/2fa/disable` (connecté) : `{ code }` :`user`
 
 Dossiers
 
-- [ ] `GET /api/folders/root` et `GET /api/folders/:id` (connecté) → `{ folder, path, folders, documents }`
-- [ ] `POST /api/folders` (connecté) : `{ name, parent_id }` → `dossier`
-- [ ] `DELETE /api/folders/:id` (connecté)
+- [x] `GET /api/folders/root` et `GET /api/folders/:id` (connecté) :`{ folder, path, folders, documents }`
+- [x] `POST /api/folders` (connecté, dans ses propres dossiers) : `{ name, parent_id }` :`dossier`
+- [x] `DELETE /api/folders/:id` (créateur)
 
 Documents
 
-- [ ] `POST /api/documents` (connecté) : `{ name, folder_id }` → `document`
-- [ ] `POST /api/documents/upload` (connecté) : formulaire `file`, `folder_id` → `document`
-- [ ] `GET /api/documents/:id` (connecté) → `document`
-- [ ] `PATCH /api/documents/:id` (connecté) : `{ content }` → `document`, appelé à chaque sauvegarde automatique
-- [ ] `PUT /api/documents/:id/file` (connecté) : formulaire `file` → `document`
-- [ ] `DELETE /api/documents/:id` (connecté)
-- [ ] `GET /api/documents/:id/file` (connecté) → fichier brut, authentifié par cookie ou lien temporaire (les balises `<img>` et `<iframe>` n'envoient pas le token)
+- [x] `POST /api/documents` (connecté, dans ses propres dossiers) : `{ name, folder_id }` :`document`
+- [x] `POST /api/documents/upload` (connecté) : formulaire `file`, `folder_id` :`document`
+- [x] `GET /api/documents/:id` (créateur ou invité) : `document`
+- [x] `PATCH /api/documents/:id` (créateur ou invité) : `{ content }` :`document`
+- [x] `PUT /api/documents/:id/file` (créateur ou invité) : formulaire `file` :`document`
+- [x] `DELETE /api/documents/:id` (créateur)
+- [x] `GET /api/documents/:id/file` (créateur ou invité) : fichier brut, chargé par le front avec le token
 
 Administration
 
-- [ ] `GET /api/users` (admin) → liste de `user`
-- [ ] `POST /api/users` (admin) : `{ first_name, last_name, email, password, role }` → `user`
-- [ ] `PATCH /api/users/:id` (admin) : `{ is_blocked }` → `user`
+- [x] `GET /api/admin/users` (admin) :liste de `user`
+- [x] `POST /api/admin/users` (admin) : `{ first_name, last_name, email, password, role }` :`user`
+- [x] `PATCH /api/admin/users/:id` (admin) : `{ is_blocked }` :`user`
+- [x] `PATCH /api/admin/users/:id/role` (admin) : `{ role }` : `user` (adouber, destituer)
 
-Invitations (pas encore utilisées par le front)
+Invitations
 
-- [ ] Lister, inviter et retirer une personne d'un document (`document_members`)
-
-Déclarer `/api/users/me` avant `/api/users/:id`, sinon Express prend `me` pour un id. `updated_by_name` s'obtient par jointure sur `users`.
+- [x] `GET /api/documents/:id/members` (créateur ou invité) :personnes invitées
+- [x] `GET /api/documents/:id/invitable` (créateur) : comptes actifs qu'on peut inviter
+- [x] `POST /api/documents/:id/members` (créateur) : `{ email }` :personne invitée
+- [x] `DELETE /api/documents/:id/members/:userId` (créateur ou la personne elle-même)
 
 ## Front
 
-- [x] Connexion, inscription, profil, bibliothèque, éditeur, administration (sur mocks)
-- [ ] Brancher le vrai back (`VITE_USE_MOCKS=false`), puis supprimer les mocks
-- [ ] Inviter une personne sur un document
+- [x] Connexion, inscription, bibliothèque, éditeur, administration branchés sur le vrai back
+- [x] Inviter une personne sur un document (`DocumentMembers.vue`)
 - [X] Édition à plusieurs en temps réel
 - [X] Reprise des modifications après une déconnexion
+- [ ] Brancher le profil et la 2FA quand les routes existeront, puis supprimer les mocks
 - [ ] Appel audio avec une personne invitée
 - [ ] Bonus : appel à plusieurs, vidéo, curseurs des autres, messagerie instantanée
 

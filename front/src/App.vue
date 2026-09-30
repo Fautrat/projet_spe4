@@ -9,7 +9,7 @@ async function onLogout() {
 	try {
 		await logout();
 	} catch {
-		// Si le serveur ne répond pas, on ferme quand même la session locale.
+		// Si le serveur ne répond pas, on ferme quand même la session locale
 	}
 	closeSession();
 	router.push({ name: 'login' });

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
 	createDocument,
@@ -9,6 +9,7 @@ import {
 	getFolder,
 	uploadFile,
 } from '../services/backApi.js';
+import { session } from '../stores/session.js';
 import { formatDate } from '../utils/format.js';
 
 const route = useRoute();
@@ -28,6 +29,9 @@ async function load() {
 }
 
 watch(() => route.params.folderId, load, { immediate: true });
+
+// À la racine, ou dans un dossier qu'on a créé, on peut ajouter des dossiers et des documents
+const canAdd = computed(() => !library.value?.folder || library.value.folder.created_by === session.user.id);
 
 function currentFolderId() {
 	return library.value?.folder ? library.value.folder.id : null;
@@ -102,7 +106,7 @@ function removeDocument(doc) {
 
 		<h1>{{ library?.folder ? library.folder.name : 'Bibliothèque' }}</h1>
 
-		<div class="toolbar">
+		<div v-if="canAdd" class="toolbar">
 			<input v-model="newName" placeholder="Nom du dossier ou du parchemin" />
 			<button class="btn btn-ghost" @click="addFolder">Créer un dossier</button>
 			<button class="btn btn-ghost" @click="addDocument">Écrire un parchemin</button>
@@ -111,6 +115,7 @@ function removeDocument(doc) {
 				<input type="file" hidden @change="onUpload" />
 			</label>
 		</div>
+		<p v-else class="meta">Vous êtes invité dans ce dossier : vous pouvez ouvrir et modifier ses parchemins, pas en ajouter.</p>
 
 		<p v-if="error" class="error">{{ error }}</p>
 
@@ -132,7 +137,9 @@ function removeDocument(doc) {
 					<td><span class="badge badge-folder" title="Contient d'autres parchemins et fichiers">Dossier</span></td>
 					<td>{{ formatDate(folder.updated_at) }}</td>
 					<td></td>
-					<td><button class="link-danger" @click="removeFolder(folder)">Brûler</button></td>
+					<td>
+						<button v-if="folder.created_by === session.user.id" class="link-danger" @click="removeFolder(folder)">Brûler</button>
+					</td>
 				</tr>
 				<tr v-for="doc in library.documents" :key="'doc-' + doc.id">
 					<td>
@@ -144,7 +151,9 @@ function removeDocument(doc) {
 					</td>
 					<td>{{ formatDate(doc.updated_at) }}</td>
 					<td>{{ doc.updated_by_name }}</td>
-					<td><button class="link-danger" @click="removeDocument(doc)">Brûler</button></td>
+					<td>
+						<button v-if="doc.created_by === session.user.id" class="link-danger" @click="removeDocument(doc)">Brûler</button>
+					</td>
 				</tr>
 				<tr v-if="!library.folders.length && !library.documents.length">
 					<td colspan="5" class="empty">Les étagères sont vides.</td>

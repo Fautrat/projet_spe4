@@ -3,9 +3,7 @@ import cors from 'cors';
 import express from 'express';
 import morgan from 'morgan';
 // import passport from 'passport';
-import authRoutes from './routes/authRoutes.js';
-import filesRoutes from './routes/filesRoutes.js';
-import mainRoutes from './routes/mainRoutes.js';
+import apiRoutes from './routes/apiRoutes.js';
 import { checkDatabaseConnection } from './config/db.js';
 
 // Passport initialisation
@@ -25,14 +23,12 @@ const PORT 			= Number(process.env.PORT) || 3000;
 const CLIENT_URL	= process.env.CLIENT_URL || 'http://localhost:5173';
 const app 			= express();
 app.use(cors({ origin: CLIENT_URL }));
-app.use(express.json());
+app.use(express.json({ limit: '2mb' }));
 app.get('/api/health', (req, res) => {res.json({ status: 'ok' });});
 app.use(morgan(":date[Europe/Paris] \: :remote-addr - :method :url | :status | :response-time ms | :res[content-length]"));
 
 // Routes
-app.use('/api', mainRoutes)
-app.use('/api/auth', authRoutes)
-app.use('/api/files', filesRoutes)
+app.use('/api', apiRoutes)
 
 // Database check
 try {

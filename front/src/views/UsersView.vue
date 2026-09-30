@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
-import { createUser, getUsers, setUserBlocked } from '../services/backApi.js';
+import { createUser, getUsers, setUserBlocked, setUserRole } from '../services/backApi.js';
 import { session } from '../stores/session.js';
 
 const users = ref([]);
@@ -12,7 +12,6 @@ const form = reactive({
 	last_name: '',
 	email: '',
 	password: '',
-	role: 'user',
 });
 
 async function load() {
@@ -27,7 +26,7 @@ async function addUser() {
 	error.value = '';
 	try {
 		await createUser({ ...form });
-		Object.assign(form, { first_name: '', last_name: '', email: '', password: '', role: 'user' });
+		Object.assign(form, { first_name: '', last_name: '', email: '', password: '' });
 		showForm.value = false;
 		load();
 	} catch (e) {
@@ -39,6 +38,16 @@ async function toggleBlocked(user) {
 	error.value = '';
 	try {
 		await setUserBlocked(user.id, !user.is_blocked);
+		load();
+	} catch (e) {
+		error.value = e.message;
+	}
+}
+
+async function toggleRole(user) {
+	error.value = '';
+	try {
+		await setUserRole(user.id, user.role === 'admin' ? 'user' : 'admin');
 		load();
 	} catch (e) {
 		error.value = e.message;
@@ -74,13 +83,6 @@ onMounted(load);
 				Mot de passe provisoire
 				<input v-model="form.password" type="password" minlength="8" required />
 			</label>
-			<label>
-				Rôle
-				<select v-model="form.role">
-					<option value="user">Aventurier</option>
-					<option value="admin">Maître du jeu</option>
-				</select>
-			</label>
 			<button class="btn">Inscrire au registre</button>
 		</form>
 
@@ -103,9 +105,14 @@ onMounted(load);
 					<td>{{ user.role === 'admin' ? 'Maître du jeu' : 'Aventurier' }}</td>
 					<td>{{ user.is_blocked ? 'Banni' : 'Actif' }}</td>
 					<td>
-						<button v-if="user.id !== session.user.id" class="link-danger" @click="toggleBlocked(user)">
-							{{ user.is_blocked ? 'Gracier' : 'Bannir' }}
-						</button>
+						<div v-if="user.id !== session.user.id" class="row-actions">
+							<button class="link-danger" @click="toggleRole(user)">
+								{{ user.role === 'admin' ? 'Destituer' : 'Adouber' }}
+							</button>
+							<button class="link-danger" @click="toggleBlocked(user)">
+								{{ user.is_blocked ? 'Gracier' : 'Bannir' }}
+							</button>
+						</div>
 					</td>
 				</tr>
 			</tbody>

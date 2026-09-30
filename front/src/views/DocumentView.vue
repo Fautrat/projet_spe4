@@ -1,9 +1,9 @@
 <script setup>
-import { computed, nextTick, onBeforeUnmount, reactive, ref, shallowRef } from 'vue';
+import { computed, nextTick, onBeforeUnmount, reactive, ref, shallowRef, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import DocumentMembers from '../components/DocumentMembers.vue';
 import VoiceCall from '../components/VoiceCall.vue';
-import { fileUrl, getDocument, replaceFile, saveDocument } from '../services/backApi.js';
+import { getDocument, loadFileUrl, replaceFile, saveDocument } from '../services/backApi.js';
 import { connect, me } from '../services/websocket.js';
 import { session } from '../stores/session.js';
 import { formatDate, formatSize } from '../utils/format.js';
@@ -125,6 +125,23 @@ const backLink = computed(() => {
 const isImage = computed(() => doc.value?.mime_type?.startsWith('image/'));
 const isPdf = computed(() => doc.value?.mime_type === 'application/pdf');
 
+// Adresse locale du fichier, rechargée à l'ouverture et après chaque remplacement.
+const fileSrc = ref('');
+
+watch(() => doc.value?.file_path, async (filePath) => {
+	if (fileSrc.value) {
+		URL.revokeObjectURL(fileSrc.value);
+		fileSrc.value = '';
+	}
+	if (filePath) {
+		try {
+			fileSrc.value = await loadFileUrl(doc.value);
+		} catch (e) {
+			error.value = e.message;
+		}
+	}
+});
+
 async function load() {
 	try {
 		doc.value = await getDocument(route.params.id);
@@ -209,7 +226,7 @@ load();
 		<p v-if="error" class="error">{{ error }}</p>
 
 		<VoiceCall v-if="voice" :voice="voice" />
-		<DocumentMembers :document-id="doc.id" />
+		<DocumentMembers :document-id="doc.id" :can-invite="doc.created_by === session.user.id" />
 
 		<div v-if="!doc.file_path" class="parchment doc-editor">
 			<!-- sur une seule ligne : un espace en trop décalerait les curseurs -->
@@ -228,14 +245,14 @@ load();
 		</div>
 
 		<div v-else class="parchment file">
-			<img v-if="isImage" :src="fileUrl(doc)" :alt="doc.name" />
-			<iframe v-else-if="isPdf" :src="fileUrl(doc)" :title="doc.name"></iframe>
+			<img v-if="isImage && fileSrc" :src="fileSrc" :alt="doc.name" />
+			<iframe v-else-if="isPdf && fileSrc" :src="fileSrc" :title="doc.name"></iframe>
 			<p v-else class="no-preview">Pas d'aperçu pour ce type de fichier : téléchargez-le pour l'ouvrir.</p>
 
 			<div class="file-footer">
 				<span>{{ formatSize(doc.file_size) }}</span>
 				<div class="toolbar">
-					<a :href="fileUrl(doc)" :download="doc.name" class="btn btn-ghost">Télécharger</a>
+					<a v-if="fileSrc" :href="fileSrc" :download="doc.name" class="btn btn-ghost">Télécharger</a>
 					<label class="btn">
 						Remplacer le fichier
 						<input type="file" hidden @change="onReplace" />

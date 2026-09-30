@@ -6,6 +6,9 @@ node_modules/
 .env.*
 !.env.example
 
+# Fichiers importés par les utilisateurs
+back/uploads/
+
 # Build
 dist/
 

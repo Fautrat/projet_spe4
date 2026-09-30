@@ -121,6 +121,12 @@ textarea:focus {
 	cursor: pointer;
 }
 
+.row-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1rem;
+}
+
 .link-danger:hover {
 	text-decoration: underline;
 }

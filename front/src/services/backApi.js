@@ -1,8 +1,8 @@
 import * as mock from '../mocks/mockBackApi.js';
 import { API_URL, USE_MOCKS } from '../config/config.js';
-import { session } from '../stores/session.js';
+import { closeSession, session } from '../stores/session.js';
 
-// Les champs suivent les colonnes de la base (first_name, is_blocked, file_path...).
+// Les champs suivent les colonnes de la base (first_name, is_blocked, file_path...)
 
 async function request(method, path, body) {
 	const options = { method, headers: {} };
@@ -21,6 +21,11 @@ async function request(method, path, body) {
 	const data = await response.json().catch(() => null);
 
 	if (!response.ok) {
+		// Token expiré ou invalide : on renvoie vers la connexion
+		if (response.status === 401 && session.token) {
+			closeSession();
+			window.location.assign('/login');
+		}
 		throw new Error(data?.message || data?.error || 'Le serveur ne répond pas.');
 	}
 	return data;
@@ -29,119 +34,119 @@ async function request(method, path, body) {
 // Authentification
 
 export function login(email, password) {
-	if (USE_MOCKS) {
-		return mock.login(email, password);
-	}
 	return request('POST', '/api/auth/login', { email, password });
 }
 
-// Si la double authentification est activée, login renvoie { requires_2fa: true, temp_token }.
+// Si la double authentification est activée, login renvoie { requires_2fa: true, temp_token }
 export function verifyTwoFactor(tempToken, code) {
-	if (USE_MOCKS) {
-		return mock.verifyTwoFactor(tempToken, code);
-	}
 	return request('POST', '/api/auth/2fa/verify', { temp_token: tempToken, code });
 }
 
 export function register(user) {
-	if (USE_MOCKS) {
-		return mock.register(user);
-	}
 	return request('POST', '/api/auth/register', user);
 }
 
-export function logout() {
-	if (USE_MOCKS) {
-		return mock.logout();
+// Le token JWT n'est pas gardé côté serveur : se déconnecter revient à l'oublier côté front
+export async function logout() {}
+
+// Dossiers et documents (vrai back, même en mode mock)
+
+function fileForm(file, fields = {}) {
+	const form = new FormData();
+	form.append('file', file);
+	for (const [key, value] of Object.entries(fields)) {
+		if (value !== null && value !== undefined) {
+			form.append(key, value);
+		}
 	}
-	return request('POST', '/api/auth/logout');
+	return form;
 }
 
-// Dossiers et documents
-
-// Pas encore de route côté back pour les dossiers et l'upload
-async function notAvailableYet() {
-	throw new Error('Pas encore disponible côté serveur.');
+// Renvoie { folder, path, folders, documents } ; folderId vide = racine
+export function getFolder(folderId) {
+	return request('GET', `/api/folders/${folderId || 'root'}`);
 }
 
-// Renvoie { folder, path, folders, documents }. Sans dossiers, tous les fichiers sont à la racine.
-export async function getFolder() {
-	const documents = await request('GET', `/files?user_id=${session.user.id}`);
-	return { folder: null, path: [], folders: [], documents };
+export function createFolder(name, parentId) {
+	return request('POST', '/api/folders', { name, parent_id: parentId });
 }
 
-export function createFolder() {
-	return notAvailableYet();
+export function deleteFolder(id) {
+	return request('DELETE', `/api/folders/${id}`);
 }
 
-export function deleteFolder() {
-	return notAvailableYet();
-}
-
-// TODO: created_by / updated_by viendront du token quand l'auth sera faite côté back
 export function createDocument(name, folderId) {
-	return request('POST', '/files', { name, folder_id: folderId, created_by: session.user.id });
+	return request('POST', '/api/documents', { name, folder_id: folderId });
 }
 
-export function uploadFile() {
-	return notAvailableYet();
+export function uploadFile(file, folderId) {
+	return request('POST', '/api/documents/upload', fileForm(file, { folder_id: folderId }));
 }
 
 export function getDocument(id) {
-	return request('GET', `/files/${id}?user_id=${session.user.id}`);
+	return request('GET', `/api/documents/${id}`);
 }
 
 export function saveDocument(id, content) {
-	return request('PUT', `/files/${id}`, { content, updated_by: session.user.id });
+	return request('PATCH', `/api/documents/${id}`, { content });
 }
 
-export function replaceFile() {
-	return notAvailableYet();
+export function replaceFile(id, file) {
+	return request('PUT', `/api/documents/${id}/file`, fileForm(file));
 }
 
 export function deleteDocument(id) {
-	return request('DELETE', `/files/${id}`);
+	return request('DELETE', `/api/documents/${id}`);
 }
 
-// Invités d'un document
+// Invitations (composant DocumentMembers.vue)
 
-export function getMembers(id) {
-	return request('GET', `/files/${id}/members`);
+export function getMembers(documentId) {
+	return request('GET', `/api/documents/${documentId}/members`);
 }
 
-export function inviteMember(id, email) {
-	return request('POST', `/files/${id}/members`, { email, invited_by: session.user.id });
+// Invite par adresse email ; renvoie la personne invitée
+// Comptes qu'on peut encore inviter (réservé au créateur du document)
+export function getInvitableUsers(documentId) {
+	return request('GET', `/api/documents/${documentId}/invitable`);
 }
 
-export function removeMember(id, userId) {
-	return request('DELETE', `/files/${id}/members/${userId}`);
+export function inviteMember(documentId, email) {
+	return request('POST', `/api/documents/${documentId}/members`, { email });
 }
 
-export function fileUrl(doc) {
-	return `${API_URL}/files/${doc.id}/file`;
+export function removeMember(documentId, userId) {
+	return request('DELETE', `/api/documents/${documentId}/members/${userId}`);
 }
 
-// Utilisateurs (admin)
+// <img>, <iframe> et les liens n'envoient pas le token : on télécharge le fichier avec le token
+// puis on l'affiche par une adresse locale (blob:), à libérer avec URL.revokeObjectURL
+export async function loadFileUrl(doc) {
+	const response = await fetch(`${API_URL}/api/documents/${doc.id}/file`, {
+		headers: { Authorization: `Bearer ${session.token}` },
+	});
+	if (!response.ok) {
+		throw new Error('Impossible de charger le fichier.');
+	}
+	return URL.createObjectURL(await response.blob());
+}
+
+// Utilisateurs (admin, vrai back, même en mode mock)
 
 export function getUsers() {
-	if (USE_MOCKS) {
-		return mock.getUsers();
-	}
-	return request('GET', '/api/users');
+	return request('GET', '/api/admin/users');
 }
 
 export function createUser(user) {
-	if (USE_MOCKS) {
-		return mock.createUser(user);
-	}
-	return request('POST', '/api/users', user);
+	return request('POST', '/api/admin/users', user);
+}
+
+export function setUserRole(id, role) {
+	return request('PATCH', `/api/admin/users/${id}/role`, { role });
 }
 
 export function setUserBlocked(id, isBlocked) {
-	if (USE_MOCKS) {
-		return mock.setUserBlocked(id, isBlocked);
-	}
-	return request('PATCH', `/api/users/${id}`, { is_blocked: isBlocked });
+	return request('PATCH', `/api/admin/users/${id}`, { is_blocked: isBlocked });
 }
 
 // Profil de l'utilisateur connecté
@@ -163,7 +168,7 @@ export function changePassword(currentPassword, newPassword) {
 	});
 }
 
-// Renvoie { secret, qr_code } : qr_code est une image (data URL) générée par le back.
+// Renvoie { secret, qr_code } : qr_code est une image (data URL) générée par le back
 export function setupTwoFactor() {
 	if (USE_MOCKS) {
 		return mock.setupTwoFactor();

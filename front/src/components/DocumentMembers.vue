@@ -1,36 +1,42 @@
 <script setup>
 import { ref } from 'vue';
-import { getMembers, inviteMember, removeMember } from '../services/backApi.js';
+import { getInvitableUsers, getMembers, inviteMember, removeMember } from '../services/backApi.js';
+import { session } from '../stores/session.js';
 
-// Invités d'un document : on invite une personne par son adresse e-mail.
+// Invités d'un document : seul le créateur choisit qui inviter,
+// parmi les comptes actifs ; une personne invitée peut se retirer elle-même
 
-const props = defineProps({ documentId: { type: Number, required: true } });
+const props = defineProps({
+	documentId: { type: Number, required: true },
+	canInvite: { type: Boolean, default: false },
+});
 
 const open = ref(false);
 const members = ref([]);
-const email = ref('');
+const invitable = ref([]);
+const selectedEmail = ref('');
 const error = ref('');
 const sending = ref(false);
 
-// Les messages du back sont en anglais
-const messages = {
-	'User not found': 'Aucun compte ne porte cette adresse.',
-	'User already invited': 'Cette personne est déjà invitée.',
-	'This user owns the file': 'Cette personne est l\'auteur du parchemin.',
-};
-
 function initials(member) {
 	return (member.first_name[0] + member.last_name[0]).toUpperCase();
+}
+
+async function loadInvitable() {
+	if (props.canInvite) {
+		invitable.value = await getInvitableUsers(props.documentId);
+	}
 }
 
 async function invite() {
 	error.value = '';
 	sending.value = true;
 	try {
-		members.value.push(await inviteMember(props.documentId, email.value));
-		email.value = '';
+		members.value.push(await inviteMember(props.documentId, selectedEmail.value));
+		selectedEmail.value = '';
+		await loadInvitable();
 	} catch (e) {
-		error.value = messages[e.message] || e.message;
+		error.value = e.message;
 	} finally {
 		sending.value = false;
 	}
@@ -41,13 +47,14 @@ async function remove(member) {
 	try {
 		await removeMember(props.documentId, member.id);
 		members.value = members.value.filter((other) => other.id !== member.id);
+		await loadInvitable();
 	} catch (e) {
 		error.value = e.message;
 	}
 }
 
-getMembers(props.documentId)
-	.then((list) => (members.value = list))
+Promise.all([getMembers(props.documentId), loadInvitable()])
+	.then(([list]) => (members.value = list))
 	.catch((e) => (error.value = e.message));
 </script>
 
@@ -58,9 +65,14 @@ getMembers(props.documentId)
 		</button>
 
 		<div v-if="open" class="parchment members-panel">
-			<form class="toolbar" @submit.prevent="invite">
-				<input v-model="email" type="email" placeholder="Adresse e-mail de la personne" aria-label="Adresse e-mail de la personne à inviter" required />
-				<button class="btn" :disabled="sending">Inviter</button>
+			<form v-if="canInvite" class="toolbar" @submit.prevent="invite">
+				<select v-model="selectedEmail" aria-label="Personne à inviter" required>
+					<option value="" disabled>Choisir un aventurier</option>
+					<option v-for="user in invitable" :key="user.id" :value="user.email">
+						{{ user.first_name }} {{ user.last_name }} ({{ user.email }})
+					</option>
+				</select>
+				<button class="btn" :disabled="sending || !selectedEmail">Inviter</button>
 			</form>
 
 			<p v-if="error" class="error">{{ error }}</p>
@@ -72,7 +84,9 @@ getMembers(props.documentId)
 						{{ member.first_name }} {{ member.last_name }}
 						<small>{{ member.email }}</small>
 					</span>
-					<button class="link-danger" @click="remove(member)">Retirer</button>
+					<button v-if="canInvite || member.id === session.user.id" class="link-danger" @click="remove(member)">
+						{{ member.id === session.user.id ? 'Me retirer' : 'Retirer' }}
+					</button>
 				</li>
 			</ul>
 			<p v-else class="none">Aucun invité pour l'instant.</p>
