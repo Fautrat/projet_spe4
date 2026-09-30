@@ -24,18 +24,18 @@ authRoutes.post('/login', async (req, res) => {
     };
 
     try{
-        // Getting user
+        // Looking for an existing account into the database
         const [rows] = await db.execute(
             'SELECT id, email, first_name, last_name, role, is_blocked, password_hash FROM users WHERE email = ?',
             [email]
         );
         const account = rows[0];
 
-        // 
+        // Checking found account's credentials and blocked status
         if(!account || !(await bcrypt.compare(password, account.password_hash))){return res.status(401).json({message: "Identifiants incorrects."});};
         if(account.is_blocked){return res.status(403).json({message: "Ce compte a été banni."});};
 
-        //
+        // Singing the user in
         const user = {
             id:         account.id,
             email:      account.email,
@@ -45,7 +45,6 @@ authRoutes.post('/login', async (req, res) => {
             is_blocked: account.is_blocked,
         };
         const token = jwt.sign(user, process.env.JWT_SECRET, {expiresIn: '3d'});
-
         res.json({user, token});
     }
     catch(err){
