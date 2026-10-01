@@ -76,12 +76,14 @@ Invitations
 - [X] Édition à plusieurs en temps réel
 - [X] Reprise des modifications après une déconnexion
 - [ ] Brancher le profil et la 2FA quand les routes existeront, puis supprimer les mocks
-- [ ] Appel audio avec une personne invitée
-- [ ] Bonus : appel à plusieurs, vidéo, curseurs des autres, messagerie instantanée
+- [x] Appel audio avec une personne invitée
+- [x] curseur
+- [ ] Bonus : appel à plusieurs, vidéo, messagerie instantanée
 
 ## Websocket
 
 - [x] Salons par document
 - [ ] Vérifier le token et l'accès au document à la connexion
-- [ ] Liste des présents dans le salon
+- [x] Liste des présents dans le salon
+- [x] Présents regroupés par compte, curseurs de ses autres onglets masqués
 - [ ] Relais des messages d'appel (WebRTC) vers un destinataire précis
