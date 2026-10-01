@@ -83,6 +83,7 @@ wss.on('connection', (ws) => {
 		}
 
 		message.from = ws.id;
+		message.userId = ws.userId;
 		sendToRoom(ws.room, message, ws);
 	});
 

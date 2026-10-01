@@ -21,7 +21,6 @@ const textarea = ref(null);
 const cursorsDiv = ref(null);
 const cursors = reactive({}); // id du client -> { name, color, index }
 const roomUsers = ref([]);
-const clientId = ref(null);
 
 let saveTimer = null;
 
@@ -29,13 +28,13 @@ let saveTimer = null;
 // et le serveur websocket sauvegarde en BDD toutes les 10s.
 // Si le websocket ne marche pas, on sauvegarde nous-mêmes avec l'API.
 let socket = null;
-let joined = false;
+const joined = ref(false);
 const voice = shallowRef(null); // appel audio avec ceux qui ont le même document ouvert
 
 function openSocket() {
 	socket = connect(onMessage);
 	socket.onopen = () => socket.sendJson({ type: 'join', id: doc.value.id, userId: session.user?.id, userName: me.name });
-	socket.onclose = () => (joined = false);
+	socket.onclose = () => (joined.value = false);
 	voice.value = createVoice(socket);
 }
 
@@ -43,8 +42,7 @@ async function onMessage(message) {
 	if (await voice.value.onMessage(message)) return;
 
 	if (message.type === 'joined') {
-		joined = true;
-		clientId.value = message.clientId;
+		joined.value = true;
 		roomUsers.value = [];
 		for (const id in cursors) delete cursors[id];
 		receiveContent(message.content);
@@ -54,6 +52,8 @@ async function onMessage(message) {
 	} else if (message.type === 'content') {
 		receiveContent(message.text);
 	} else if (message.type === 'cursor') {
+		// nos autres onglets ont aussi un curseur, on ne l'affiche pas
+		if (session.user && message.userId === session.user.id) return;
 		cursors[message.from] = { name: message.name, color: message.color, index: message.index };
 	} else if (message.type === 'user-joined') {
 		sendCursor();
@@ -91,7 +91,7 @@ function moveCursors(change) {
 }
 
 function sendCursor() {
-	if (!joined) return;
+	if (!joined.value) return;
 	socket.sendJson({ type: 'cursor', name: me.name, color: me.color, index: textarea.value.selectionStart });
 }
 
@@ -113,6 +113,13 @@ const parts = computed(() => {
 	}
 	result.push({ key: 'end', text: text.value.slice(last) + '\n' });
 	return result;
+});
+
+// Une personne avec plusieurs onglets ouverts n'apparaît qu'une fois
+const presentUsers = computed(() => {
+	const byAccount = new Map();
+	for (const user of roomUsers.value) byAccount.set(user.userId ?? user.id, user);
+	return [...byAccount.values()];
 });
 
 const backLink = computed(() => {
@@ -170,7 +177,7 @@ function onInput(event) {
 	text.value = event.target.value;
 	status.value = 'Modifications en cours…';
 
-	if (joined) {
+	if (joined.value) {
 		socket.sendJson({ type: 'content', text: text.value });
 		sendCursor();
 	} else {
@@ -212,9 +219,9 @@ load();
 			<div class="doc-title-room">
 				<h1>{{ doc.name }}</h1>
 				<div v-if="joined" class="room-users">
-					<strong>Dans cette room ({{ roomUsers.length }})</strong>
+					<strong>Dans cette room ({{ presentUsers.length }})</strong>
 					<ul>
-						<li v-for="user in roomUsers" :key="user.id" :class="{ 'room-user-self': user.id === clientId }">{{ user.name }}</li>
+						<li v-for="user in presentUsers" :key="user.id" :class="{ 'room-user-self': user.userId === session.user?.id }">{{ user.name }}</li>
 					</ul>
 				</div>
 			</div>

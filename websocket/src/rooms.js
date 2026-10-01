@@ -29,7 +29,7 @@ export function getRoomUsers(name) {
 	const room = rooms.get(name);
 	if (!room) return [];
 
-	return [...room].map((client) => ({ id: client.id, name: client.userName || 'Anonyme' }));
+	return [...room].map((client) => ({ id: client.id, userId: client.userId, name: client.userName || 'Anonyme' }));
 }
 
 export function roomExists(name) {
