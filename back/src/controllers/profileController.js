@@ -27,7 +27,7 @@ export const changePassword = async (req, res) => {
 };
 
 export const modifyUser = async (req, res) => {
-    const {first_name, last_name, email, id, role, is_blocked} = req.body || {};
+	const {first_name, last_name, email} = req.body || {};
 
     // Checking validity of given informations
 	if(
@@ -42,27 +42,28 @@ export const modifyUser = async (req, res) => {
     // Changing the user's informations into the database
     try{
 		await db.execute(
-            `
-			    UPDATE users
-                SET
-                    first_name  = ?,
-                    last_name   = ?,
-                    email       = ?
-                WHERE id = ?
-            `,
-			[first_name, last_name, email, id]
+			`
+				UPDATE users
+				SET
+					first_name	= ?, 
+					last_name	= ?,
+					email 		= ?
+				WHERE id = ?
+			`,
+			[first_name.trim(), last_name.trim(), email.trim().toLowerCase(), req.user.id],
 		);
-        const user = {
-            id:         req.user.id,
-            email:      email,
-            first_name: first_name,
-            last_name:  last_name,
-            role:       req.user.role,
-            is_blocked: req.user.is_blocked
-        };
-		res.status(201).json({user});
+		const user = {
+			id: 			req.user.id,
+			email: 			email.trim().toLowerCase(),
+			first_name:		first_name.trim(),
+			last_name: 		last_name.trim(),
+			role: 			req.user.role,
+			is_blocked: 	req.user.is_blocked,
+			totp_enabled:	Boolean(req.user.totp_enabled),
+		};
+		res.status(201).json(user);
 	}
-    catch(err){
-		res.status(500).json({message: "Une erreur est survenue lors de la modification des informations de l'utilisateur."});
+	catch(err){
+		res.status(500).json({message: "Une erreur est survenue lors de la modification des informations de l\'utilisateur."});
 	};
 };
