@@ -4,8 +4,6 @@ import express from 'express';
 import morgan from 'morgan';
 // import passport from 'passport';
 import apiRoutes from './routes/apiRoutes.js';
-import authRoutes from './routes/authRoutes.js';
-import profileRoutes from './routes/profileRoutes.js';
 import { checkDatabaseConnection } from './config/db.js';
 
 // Passport initialisation
