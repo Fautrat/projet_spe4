@@ -6,6 +6,7 @@ import morgan from 'morgan';
 import authRoutes from './routes/authRoutes.js';
 import filesRoutes from './routes/filesRoutes.js';
 import mainRoutes from './routes/mainRoutes.js';
+import profileRoutes from './routes/profileRoutes.js';
 import { checkDatabaseConnection } from './config/db.js';
 
 // Passport initialisation
@@ -33,6 +34,7 @@ app.use(morgan(":date[Europe/Paris] \: :remote-addr - :method :url | :status | :
 app.use('/api', mainRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api/files', filesRoutes)
+app.use('/api/users', profileRoutes)
 
 // Database check
 try {
