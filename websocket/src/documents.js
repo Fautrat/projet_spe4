@@ -12,6 +12,17 @@ export async function getDoc(id) {
 	return docs.get(id);
 }
 
+export async function canAccess(id, userId) {
+	const [rows] = await db.query(
+		`SELECT 1 FROM documents d
+		WHERE d.id = ? AND (d.created_by = ? OR EXISTS (
+			SELECT 1 FROM document_members m WHERE m.document_id = d.id AND m.user_id = ?
+		))`,
+		[id, userId, userId],
+	);
+	return rows.length > 0;
+}
+
 export async function saveDoc(id) {
 	const doc = docs.get(id);
 	if (!doc || !doc.changed) return false;
