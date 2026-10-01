@@ -30,6 +30,7 @@ let saveTimer = null;
 let socket = null;
 const joined = ref(false);
 const voice = shallowRef(null); // appel audio avec ceux qui ont le même document ouvert
+const connectionCount = ref(0); // change à chaque connexion pour recréer VoiceCall avec le nouvel appel
 
 let leaving = false; // la page se ferme : pas de reconnexion
 let reconnectTimer = null;
@@ -42,6 +43,7 @@ function openSocket() {
 	socket.onclose = onSocketClose;
 	voice.value?.stop();
 	voice.value = createVoice(socket);
+	connectionCount.value++;
 }
 
 // Coupure du websocket (réseau, redémarrage du serveur) : on retente après 1, 2, 4, 8 puis 10 secondes
@@ -263,7 +265,7 @@ load();
 
 		<p v-if="error" class="error">{{ error }}</p>
 
-		<VoiceCall v-if="voice" :voice="voice" />
+		<VoiceCall v-if="voice" :key="connectionCount" :voice="voice" />
 		<DocumentMembers :document-id="doc.id" :can-invite="doc.created_by === session.user.id" />
 
 		<div v-if="!doc.file_path" class="parchment doc-editor">
