@@ -1,4 +1,4 @@
-// Fausse API du profil et de la double authentification, en attendant leurs routes dans le back
+// Fausse API de la double authentification, en attendant ses routes dans le back
 // Rien n'est enregistré en base : les changements ne vivent que dans la session du navigateur
 import { session } from '../stores/session.js';
 
@@ -12,18 +12,6 @@ function wait() {
 function checkCode(code) {
 	if (code !== MOCK_TOTP_CODE) {
 		throw new Error('Code incorrect. En mode démo, le code est 123456.');
-	}
-}
-
-export async function updateProfile(changes) {
-	await wait();
-	return { ...session.user, ...changes };
-}
-
-export async function changePassword(currentPassword) {
-	await wait();
-	if (!currentPassword) {
-		throw new Error('Le mot de passe actuel est obligatoire.');
 	}
 }
 

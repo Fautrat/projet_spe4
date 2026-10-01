@@ -1,68 +1,44 @@
 import bcrypt from 'bcrypt';
-import { db } from '../config/db.js';
+import { HttpError, requireEmail, requireText } from '../middlewares/errors.js';
+import * as users from '../models/userModel.js';
 
+// PATCH /api/users/me/password avec { current_password, new_password }
 export const changePassword = async (req, res) => {
-	const {current_password, new_password} = req.body || {};
+	const { current_password, new_password } = req.body || {};
 
-    // Checking validity of given informations
-	if(
-		typeof current_password !== 'string'    ||
-		typeof new_password !== 'string'        ||
-		!current_password                       ||
-		!new_password
-	){return res.status(400).json({message: "Les mots de passes saisies ne doivent pas être vides."});};
-
-    // Changing the password hash into the database
-	try{
-		const password_hash = await bcrypt.hash(new_password, 12);
-		await db.execute(
-			'UPDATE users SET password_hash = ? WHERE id = ?',
-			[password_hash, req.user.id]
-		);
-		res.status(201).json({message: "Le mot de passe a été modifié avec succès."});
+	// Checking validity of given informations
+	if (typeof current_password !== 'string' || !current_password) {
+		throw new HttpError(400, 'Le mot de passe actuel est obligatoire.');
 	}
-    catch(err){
-		res.status(500).json({message: "Une erreur est survenue lors de la modification du mot de passe."});
-	};
+	if (typeof new_password !== 'string' || new_password.length < 8) {
+		throw new HttpError(400, 'Le nouveau mot de passe doit faire au moins 8 caractères.');
+	}
+
+	const passwordHash = await users.findPasswordHash(req.user.id);
+	if (!passwordHash || !(await bcrypt.compare(current_password, passwordHash))) {
+		throw new HttpError(400, 'Le mot de passe actuel est incorrect.');
+	}
+
+	// Changing the password hash into the database
+	await users.setPassword(req.user.id, await bcrypt.hash(new_password, 12));
+	res.json({ message: 'Le mot de passe a été modifié avec succès.' });
 };
 
+// PATCH /api/users/me avec { first_name, last_name, email }, renvoie le user mis à jour
 export const modifyUser = async (req, res) => {
-    const {first_name, last_name, email, id, role, is_blocked} = req.body || {};
+	// Checking validity of given informations
+	const firstName = requireText(req.body?.first_name, 'Le prénom', 100);
+	const lastName = requireText(req.body?.last_name, 'Le nom', 100);
+	const email = requireEmail(req.body?.email);
 
-    // Checking validity of given informations
-	if(
-		typeof first_name !== 'string'  ||
-		typeof last_name !== 'string'   ||
-		typeof email !== 'string'       ||
-		!first_name                     ||
-		!last_name                      ||
-        !email
-	){return res.status(400).json({message: "Les informations saisies ne doivent pas être vides."});};
-
-    // Changing the user's informations into the database
-    try{
-		await db.execute(
-            `
-			    UPDATE users
-                SET
-                    first_name  = ?,
-                    last_name   = ?,
-                    email       = ?
-                WHERE id = ?
-            `,
-			[first_name, last_name, email, id]
-		);
-        const user = {
-            id:         req.user.id,
-            email:      email,
-            first_name: first_name,
-            last_name:  last_name,
-            role:       req.user.role,
-            is_blocked: req.user.is_blocked
-        };
-		res.status(201).json({user});
+	// Changing the user's informations into the database
+	try {
+		const user = await users.updateProfile(req.user.id, { firstName, lastName, email });
+		res.json(user);
+	} catch (err) {
+		if (err.code === 'ER_DUP_ENTRY') {
+			throw new HttpError(409, 'Email déjà utilisé par un autre compte.');
+		}
+		throw err;
 	}
-    catch(err){
-		res.status(500).json({message: "Une erreur est survenue lors de la modification des informations de l'utilisateur."});
-	};
 };

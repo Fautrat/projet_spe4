@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
-import { db } from '../config/db.js';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
+import { findById } from '../models/userModel.js';
 import { HttpError } from './errors.js';
 
 
@@ -19,8 +20,7 @@ export default function auth(req, res, next){
 // Le token garde le rôle et is_blocked du moment de la connexion : on relit le compte
 // en base, pour qu'un blocage ou un changement de rôle s'applique tout de suite
 async function checkAccount(req, res, next) {
-	const [rows] = await db.query('SELECT id, role, is_blocked FROM users WHERE id = ?', [req.user.id]);
-	const account = rows[0];
+	const account = await findById(req.user.id);
 	if (!account) {
 		throw new HttpError(401, 'Ce compte n\'existe plus.');
 	}
@@ -41,3 +41,16 @@ function checkAdmin(req, res, next) {
 // À mettre sur chaque route, par exemple : apiRoutes.get('/chemin', connected, controleur)
 export const connected = [auth, checkAccount];
 export const admin = [auth, checkAccount, checkAdmin];
+
+// 5 connexions ratées par tranche de 15 minutes pour un même couple adresse IP et email,
+// les connexions réussies ne comptent pas
+// En production derrière Nginx, ajouter app.set('trust proxy', 1) dans index.js, sinon req.ip vaut l'adresse de Nginx
+export const loginLimit = rateLimit({
+	windowMs: 15 * 60 * 1000,
+	limit: 5,
+	skipSuccessfulRequests: true,
+	keyGenerator: (req) => `${ipKeyGenerator(req.ip)} ${String(req.body?.email || '').trim().toLowerCase()}`,
+	message: { message: 'Trop de tentatives de connexion, réessayez dans 15 minutes.' },
+	standardHeaders: 'draft-8',
+	legacyHeaders: false,
+});

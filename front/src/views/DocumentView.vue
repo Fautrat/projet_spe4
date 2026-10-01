@@ -31,11 +31,31 @@ let socket = null;
 const joined = ref(false);
 const voice = shallowRef(null); // appel audio avec ceux qui ont le même document ouvert
 
+let leaving = false; // la page se ferme : pas de reconnexion
+let reconnectTimer = null;
+let reconnectDelay = 1000;
+let editedOffline = false; // texte modifié pendant une coupure du websocket
+
 function openSocket() {
 	socket = connect(onMessage);
 	socket.onopen = () => socket.sendJson({ type: 'join', id: doc.value.id });
-	socket.onclose = () => (joined.value = false);
+	socket.onclose = onSocketClose;
+	voice.value?.stop();
 	voice.value = createVoice(socket);
+}
+
+// Coupure du websocket (réseau, redémarrage du serveur) : on retente après 1, 2, 4, 8 puis 10 secondes
+// Pendant ce temps les modifications partent par l'API
+function onSocketClose(event) {
+	joined.value = false;
+	if (leaving) return;
+	if (event.code === 4001) {
+		error.value = 'Session expirée, reconnectez-vous pour éditer à plusieurs';
+		return;
+	}
+	status.value = 'Connexion perdue, nouvelle tentative…';
+	reconnectTimer = setTimeout(openSocket, reconnectDelay);
+	reconnectDelay = Math.min(reconnectDelay * 2, 10000);
 }
 
 async function onMessage(message) {
@@ -43,9 +63,17 @@ async function onMessage(message) {
 
 	if (message.type === 'joined') {
 		joined.value = true;
+		reconnectDelay = 1000;
+		status.value = '';
 		roomUsers.value = [];
 		for (const id in cursors) delete cursors[id];
-		receiveContent(message.content);
+		if (editedOffline) {
+			// on a écrit pendant la coupure : notre version remplace celle du serveur, pour ne rien perdre
+			editedOffline = false;
+			socket.sendJson({ type: 'content', text: text.value });
+		} else {
+			receiveContent(message.content);
+		}
 		sendCursor();
 	} else if (message.type === 'room-users') {
 		roomUsers.value = message.users;
@@ -132,7 +160,7 @@ const backLink = computed(() => {
 const isImage = computed(() => doc.value?.mime_type?.startsWith('image/'));
 const isPdf = computed(() => doc.value?.mime_type === 'application/pdf');
 
-// Adresse locale du fichier, rechargée à l'ouverture et après chaque remplacement.
+// Adresse locale du fichier, rechargée à l'ouverture et après chaque remplacement
 const fileSrc = ref('');
 
 watch(() => doc.value?.file_path, async (filePath) => {
@@ -181,6 +209,7 @@ function onInput(event) {
 		socket.sendJson({ type: 'content', text: text.value });
 		sendCursor();
 	} else {
+		editedOffline = true;
 		clearTimeout(saveTimer);
 		saveTimer = setTimeout(save, 1000);
 	}
@@ -200,6 +229,8 @@ async function onReplace(event) {
 }
 
 onBeforeUnmount(() => {
+	leaving = true;
+	clearTimeout(reconnectTimer);
 	voice.value?.stop();
 	socket?.close();
 	if (saveTimer) {

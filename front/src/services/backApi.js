@@ -149,19 +149,13 @@ export function setUserBlocked(id, isBlocked) {
 	return request('PATCH', `/api/admin/users/${id}`, { is_blocked: isBlocked });
 }
 
-// Profil de l'utilisateur connecté
+// Profil de l'utilisateur connecté (vrai back, même en mode mock)
 
 export function updateProfile(changes) {
-	if (USE_MOCKS) {
-		return mock.updateProfile(changes);
-	}
 	return request('PATCH', '/api/users/me', changes);
 }
 
 export function changePassword(currentPassword, newPassword) {
-	if (USE_MOCKS) {
-		return mock.changePassword(currentPassword, newPassword);
-	}
 	return request('PATCH', '/api/users/me/password', {
 		current_password: currentPassword,
 		new_password: newPassword,

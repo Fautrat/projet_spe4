@@ -1,6 +1,6 @@
-import { db }   from '../config/db.js';
 import bcrypt   from 'bcrypt';
 import jwt      from 'jsonwebtoken';
+import * as users from '../models/userModel.js';
 
 // Sign-in route
 export const login = async (req, res) => {
@@ -14,31 +14,28 @@ export const login = async (req, res) => {
 
 	try{
 		// Looking for an existing account into the database
-		const [rows] = await db.execute(
-			'SELECT id, email, first_name, last_name, role, is_blocked, password_hash FROM users WHERE email = ?',
-			[normalizedEmail]
-		);
-		const account = rows[0];
+		const account = await users.findByEmailWithPassword(normalizedEmail);
 
 		// Checking found account's credentials and blocked status
 		if(!account || !(await bcrypt.compare(password, account.password_hash))){return res.status(401).json({message: "Identifiants incorrects."});};
 		if(account.is_blocked){return res.status(403).json({message: "Ce compte a été banni."});};
 
-        // Signing the user in
-        const user = {
-            id:         account.id,
-            email:      account.email,
-            first_name: account.first_name,
-            last_name:  account.last_name,
-            role:       account.role,
-            is_blocked: account.is_blocked,
-        };
-        const token = jwt.sign(user, process.env.JWT_SECRET, {expiresIn: '3d'});
-        res.status(201).json({user, token});
-    }
-    catch(err){
-        res.status(500).json({message: "Une erreur est survenue lors de la connexion."});
-    };
+		// Signing the user in
+		const user = {
+			id:           account.id,
+			email:        account.email,
+			first_name:   account.first_name,
+			last_name:    account.last_name,
+			role:         account.role,
+			is_blocked:   account.is_blocked,
+			totp_enabled: account.totp_enabled,
+		};
+		const token = jwt.sign(user, process.env.JWT_SECRET, {expiresIn: '3d'});
+		res.status(200).json({user, token});
+	}
+	catch(err){
+		res.status(500).json({message: "Une erreur est survenue lors de la connexion."});
+	};
 };
 
 // Registration route
@@ -65,32 +62,22 @@ export const register = async (req, res) => {
 		return res.status(400).json({message: "L'adresse email n'est pas valide."});
 	};
 
-	// Inserting the new user into the database
 	try{
 		// Hashing user's password
 		const password_hash = await bcrypt.hash(password, 12);
 
-		// Inserting the new user into the database
-		await db.execute(
-			'INSERT INTO users (first_name, last_name, email, password_hash) VALUES (?, ?, ?, ?)',
-			[first_name, last_name, email, password_hash]
-		);
-
-		// Getting the new user's ID
-		const [rows] = await db.execute(
-			'SELECT id FROM users WHERE email = ? AND password_hash = ?;',
-			[email, password_hash]
-		);
-		const account = rows[0];
+		// Inserting the new user into the database, create renvoie le compte avec son id
+		const account = await users.create({firstName: first_name, lastName: last_name, email, passwordHash: password_hash});
 
 		// Signing the new user in
 		const user = {
-			id:         account.id,
-			email:      email,
-			first_name: first_name,
-			last_name:  last_name,
-			role:       'user',
-			is_blocked: false,
+			id:           account.id,
+			email:        account.email,
+			first_name:   account.first_name,
+			last_name:    account.last_name,
+			role:         account.role,
+			is_blocked:   account.is_blocked,
+			totp_enabled: account.totp_enabled,
 		};
 		const token = jwt.sign(user, process.env.JWT_SECRET, {expiresIn: '3d'});
 		res.status(201).json({user, token});

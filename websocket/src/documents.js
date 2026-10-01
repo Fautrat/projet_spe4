@@ -12,13 +12,15 @@ export async function getDoc(id) {
 	return docs.get(id);
 }
 
+// un compte supprimé ou bloqué n'a plus accès, même si son token est encore valide
 export async function canAccess(id, userId) {
 	const [rows] = await db.query(
 		`SELECT 1 FROM documents d
+		JOIN users u ON u.id = ? AND u.is_blocked = FALSE
 		WHERE d.id = ? AND (d.created_by = ? OR EXISTS (
 			SELECT 1 FROM document_members m WHERE m.document_id = d.id AND m.user_id = ?
 		))`,
-		[id, userId, userId],
+		[userId, id, userId, userId],
 	);
 	return rows.length > 0;
 }

@@ -21,7 +21,7 @@ import {
 import { createFolder, deleteFolder, getFolderContents } from '../controllers/folderController.js';
 import { changePassword, modifyUser } from '../controllers/profileController.js';
 import { login, register } from '../controllers/authController.js';
-import { admin, connected } from '../middlewares/auth.js';
+import { admin, connected, loginLimit } from '../middlewares/auth.js';
 import { errorHandler } from '../middlewares/errors.js';
 import { upload } from '../middlewares/upload.js';
 
@@ -30,7 +30,7 @@ import { upload } from '../middlewares/upload.js';
 const apiRoutes = Router();
 
 // Connexion et inscription (publiques)
-apiRoutes.post('/auth/login', login);
+apiRoutes.post('/auth/login', loginLimit, login);
 apiRoutes.post('/auth/register', register);
 
 // Profils
