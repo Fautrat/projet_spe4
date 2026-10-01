@@ -28,12 +28,12 @@ Authentification
 - [x] `POST /api/auth/register` (public) : `{ first_name, last_name, email, password }` → `{ user, token }`, rôle toujours `user`
 - [x] `POST /api/auth/login` (public) : `{ email, password }` → `{ user, token }`, ou `{ requires_2fa: true, temp_token }` si 2FA active
 - [ ] `POST /api/auth/2fa/verify` (public) : `{ temp_token, code }` → `{ user, token }`
-- [ ] `POST /api/auth/logout` (connecté)
+- [ ] ~~`POST /api/auth/logout` (connecté)~~
 
 Profil
 
 - [ ] `PATCH /api/users/me` (connecté) : `{ first_name, last_name, email }` → `user`
-- [ ] `PATCH /api/users/me/password` (connecté) : `{ current_password, new_password }`
+- [x] `PATCH /api/users/me/password` (connecté) : `{ current_password, new_password }`
 - [ ] `POST /api/auth/2fa/setup` (connecté) → `{ secret, qr_code }`, QR code en data URL
 - [ ] `POST /api/auth/2fa/enable` (connecté) : `{ code }` → `user`
 - [ ] `POST /api/auth/2fa/disable` (connecté) : `{ code }` → `user`
