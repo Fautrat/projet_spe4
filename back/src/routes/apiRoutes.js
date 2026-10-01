@@ -19,6 +19,7 @@ import {
 	uploadDocument,
 } from '../controllers/documentController.js';
 import { createFolder, deleteFolder, getFolderContents } from '../controllers/folderController.js';
+import { changePassword, modifyUser } from '../controllers/profileController.js';
 import { admin, connected } from '../middlewares/auth.js';
 import { errorHandler } from '../middlewares/errors.js';
 import { upload } from '../middlewares/upload.js';
@@ -30,6 +31,10 @@ const apiRoutes = Router();
 
 // Connexion et inscription (publiques)
 apiRoutes.use('/auth', authRoutes);
+
+// Profils
+apiRoutes.patch('/me', connected, modifyUser);
+apiRoutes.patch('/me/password', connected, changePassword);
 
 // Dossiers
 apiRoutes.get('/folders/:id', connected, getFolderContents);

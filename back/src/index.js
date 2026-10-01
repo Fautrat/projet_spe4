@@ -31,8 +31,6 @@ app.use(morgan(":date[Europe/Paris] \: :remote-addr - :method :url | :status | :
 
 // Routes
 app.use('/api', apiRoutes)
-app.use('/api/auth', authRoutes)
-app.use('/api/users', profileRoutes)
 
 // Database check
 try {
