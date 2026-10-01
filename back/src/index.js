@@ -2,21 +2,8 @@ import 'dotenv/config';
 import cors from 'cors';
 import express from 'express';
 import morgan from 'morgan';
-// import passport from 'passport';
 import apiRoutes from './routes/apiRoutes.js';
 import { checkDatabaseConnection } from './config/db.js';
-
-// Passport initialisation
-// passport.serializeUser((user, done) => done(null, user));
-// passport.deserializeUser((obj, done) => done(null, obj));
-// passport.use(new Strategy(
-//     {
-//         clientID:       process.env.GOOGLE_CLIENT_ID        || '',
-//         clientSecret:	process.env.GOOGLE_CLIENT_SECRET    || '',
-//         callbackURL:    process.env.CALLBACK_URL            || ''
-//     },
-//     (accessToken, refreshToken, profile, done) => {return done(null, profile);}
-// ));
 
 // Settings
 const PORT 			= Number(process.env.PORT) || 3000;
