@@ -9,7 +9,7 @@
 
 ## Back
 
-- [ ] Hachage des mots de passe (bcrypt) et génération du token
+- [x] Hachage des mots de passe (bcrypt) et génération du token
 - [ ] Middlewares : connecté, admin, compte non bloqué
 - [ ] Upload des fichiers (multer), suppression sur le disque avec le document ou le dossier
 - [ ] Vérifier l'accès à chaque document (propriétaire ou invité)
@@ -32,7 +32,7 @@ Authentification
 
 Profil
 
-- [ ] `PATCH /api/users/me` (connecté) : `{ first_name, last_name, email }` → `user`
+- [x] `PATCH /api/users/me` (connecté) : `{ first_name, last_name, email }` → `user`
 - [x] `PATCH /api/users/me/password` (connecté) : `{ current_password, new_password }`
 - [ ] `POST /api/auth/2fa/setup` (connecté) → `{ secret, qr_code }`, QR code en data URL
 - [ ] `POST /api/auth/2fa/enable` (connecté) : `{ code }` → `user`
