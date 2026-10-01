@@ -50,7 +50,6 @@ authRoutes.post('/login', async (req, res) => {
         res.status(201).json({user, token});
     }
     catch(err){
-        console.error(err);
         res.status(500).json({message: "Une erreur est survenue lors de la connexion."});
     };
 });
