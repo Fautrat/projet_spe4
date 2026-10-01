@@ -19,7 +19,10 @@ export default function auth(req, res, next){
 // Le token garde le rôle et is_blocked du moment de la connexion : on relit le compte
 // en base, pour qu'un blocage ou un changement de rôle s'applique tout de suite
 async function checkAccount(req, res, next) {
-	const [rows] = await db.query('SELECT id, role, is_blocked FROM users WHERE id = ?', [req.user.id]);
+	const [rows] = await db.query(
+		'SELECT id, email, first_name, last_name, role, is_blocked, totp_enabled FROM users WHERE id = ?',
+		[req.user.id],
+	);
 	const account = rows[0];
 	if (!account) {
 		throw new HttpError(401, 'Ce compte n\'existe plus.');
