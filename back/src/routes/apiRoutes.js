@@ -30,12 +30,12 @@ import { upload } from '../middlewares/upload.js';
 const apiRoutes = Router();
 
 // Connexion et inscription (publiques)
-apiRoutes.post('/login', login);
-apiRoutes.post('/register', register);
+apiRoutes.post('/auth/login', login);
+apiRoutes.post('/auth/register', register);
 
 // Profils
-apiRoutes.patch('/me', connected, modifyUser);
-apiRoutes.patch('/me/password', connected, changePassword);
+apiRoutes.patch('/users/me', connected, modifyUser);
+apiRoutes.patch('/users/me/password', connected, changePassword);
 
 // Dossiers
 apiRoutes.get('/folders/:id', connected, getFolderContents);
