@@ -33,11 +33,11 @@ Authentification
 
 Profil (encore sur mocks côté front)
 
-- [ ] `PATCH /api/users/me` (connecté) : `{ first_name, last_name, email }` :`user`
-- [ ] `PATCH /api/users/me/password` (connecté) : `{ current_password, new_password }`
-- [ ] `POST /api/auth/2fa/setup` (connecté) :`{ secret, qr_code }`, QR code en data URL
-- [ ] `POST /api/auth/2fa/enable` (connecté) : `{ code }` :`user`
-- [ ] `POST /api/auth/2fa/disable` (connecté) : `{ code }` :`user`
+- [x] `PATCH /api/users/me` (connecté) : `{ first_name, last_name, email }` → `user`
+- [x] `PATCH /api/users/me/password` (connecté) : `{ current_password, new_password }`
+- [ ] `POST /api/auth/2fa/setup` (connecté) → `{ secret, qr_code }`, QR code en data URL
+- [ ] `POST /api/auth/2fa/enable` (connecté) : `{ code }` → `user`
+- [ ] `POST /api/auth/2fa/disable` (connecté) : `{ code }` → `user`
 
 Dossiers
 

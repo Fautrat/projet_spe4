@@ -38,22 +38,21 @@ authRoutes.post('/login', async (req, res) => {
 		if(!account || !(await bcrypt.compare(password, account.password_hash))){return res.status(401).json({message: "Identifiants incorrects."});};
 		if(account.is_blocked){return res.status(403).json({message: "Ce compte a été banni."});};
 
-		// Signing the user in
-		const user = {
-			id:         account.id,
-			email:      account.email,
-			first_name: account.first_name,
-			last_name:  account.last_name,
-			role:       account.role,
-			is_blocked: account.is_blocked,
-		};
-		const token = jwt.sign(user, process.env.JWT_SECRET, {expiresIn: '3d'});
-		res.status(200).json({user, token});
-	}
-	catch(err){
-		console.error(err);
-		res.status(500).json({message: "Une erreur est survenue lors de la connexion."});
-	};
+        // Signing the user in
+        const user = {
+            id:         account.id,
+            email:      account.email,
+            first_name: account.first_name,
+            last_name:  account.last_name,
+            role:       account.role,
+            is_blocked: account.is_blocked,
+        };
+        const token = jwt.sign(user, process.env.JWT_SECRET, {expiresIn: '3d'});
+        res.status(201).json({user, token});
+    }
+    catch(err){
+        res.status(500).json({message: "Une erreur est survenue lors de la connexion."});
+    };
 });
 
 // Registration route

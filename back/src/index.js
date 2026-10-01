@@ -4,6 +4,8 @@ import express from 'express';
 import morgan from 'morgan';
 // import passport from 'passport';
 import apiRoutes from './routes/apiRoutes.js';
+import authRoutes from './routes/authRoutes.js';
+import profileRoutes from './routes/profileRoutes.js';
 import { checkDatabaseConnection } from './config/db.js';
 
 // Passport initialisation
@@ -29,6 +31,8 @@ app.use(morgan(":date[Europe/Paris] \: :remote-addr - :method :url | :status | :
 
 // Routes
 app.use('/api', apiRoutes)
+app.use('/api/auth', authRoutes)
+app.use('/api/users', profileRoutes)
 
 // Database check
 try {
