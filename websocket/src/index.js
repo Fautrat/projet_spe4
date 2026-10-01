@@ -1,8 +1,9 @@
 import 'dotenv/config';
 import { randomUUID } from 'node:crypto';
+import jwt from 'jsonwebtoken';
 import { WebSocketServer } from 'ws';
 import { getRoomUsers, joinRoom, leaveRoom, sendToRoom, roomExists } from './rooms.js';
-import { docs, getDoc, saveDoc } from './documents.js';
+import { canAccess, docs, getDoc, saveDoc } from './documents.js';
 
 const PORT = Number(process.env.PORT) || 3001;
 const wss = new WebSocketServer({ port: PORT });
@@ -32,7 +33,17 @@ async function leave(ws) {
 	}
 }
 
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req) => {
+	const token = new URL(req.url, 'http://localhost').searchParams.get('token');
+	try {
+		const user = jwt.verify(token, process.env.JWT_SECRET);
+		ws.userId = user.id;
+		ws.userName = `${user.first_name} ${user.last_name}`;
+	} catch {
+		ws.close(4001, 'Token invalide');
+		return;
+	}
+
 	console.log(`Client ${ws._socket.remoteAddress} connecté`);
 	ws.id = randomUUID();
 	ws.room = null;
@@ -50,7 +61,7 @@ wss.on('connection', (ws) => {
 
 			let doc = null;
 			try {
-				doc = await getDoc(message.id);
+				if (await canAccess(message.id, ws.userId)) doc = await getDoc(message.id);
 			} catch (err) {
 				console.error(err.message);
 			}
@@ -59,9 +70,6 @@ wss.on('connection', (ws) => {
 				return;
 			}
 
-			// TODO: prendre l'id dans le token quand l'auth sera faite
-			ws.userId = message.userId;
-			ws.userName = typeof message.userName === 'string' ? message.userName : 'Anonyme';
 			joinRoom(ws, message.id);
 
 			ws.send(JSON.stringify({ type: 'joined', id: message.id, clientId: ws.id, content: doc.text }));

@@ -13,7 +13,7 @@ export const me = {
 };
 
 export function connect(onMessage) {
-	const socket = new WebSocket(WS_URL);
+	const socket = new WebSocket(`${WS_URL}?token=${encodeURIComponent(session.token || '')}`);
 	socket.onmessage = (event) => onMessage(JSON.parse(event.data));
 
 	socket.sendJson = (message) => {

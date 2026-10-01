@@ -33,7 +33,7 @@ const voice = shallowRef(null); // appel audio avec ceux qui ont le même docume
 
 function openSocket() {
 	socket = connect(onMessage);
-	socket.onopen = () => socket.sendJson({ type: 'join', id: doc.value.id, userId: session.user?.id, userName: me.name });
+	socket.onopen = () => socket.sendJson({ type: 'join', id: doc.value.id });
 	socket.onclose = () => (joined.value = false);
 	voice.value = createVoice(socket);
 }
