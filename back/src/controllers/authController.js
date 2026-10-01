@@ -1,23 +1,9 @@
-import { Router }   from 'express';
-import bcrypt       from 'bcrypt';
-import jwt          from 'jsonwebtoken';
-import { db }       from '../config/db.js';
-// import passport from 'passport';
-
-const authRoutes = Router();
-
-// Google authentication route
-// authRoutes.get('/g', passport.authenticate('google', {scope: ['profile', 'email']}));
-
-// Google authentication callback route
-// authRoutes.get(
-//     '/g/callback',
-//     passport.authenticate('google', { failureRedirect: '/' }), 
-//     (req, res) => res.redirect('/')
-// );
+import { db }   from '../config/db.js';
+import bcrypt   from 'bcrypt';
+import jwt      from 'jsonwebtoken';
 
 // Sign-in route
-authRoutes.post('/login', async (req, res) => {
+export const login = async (req, res) => {
 	const {email, password} = req.body || {};
 
 	// Checking validity of given informations
@@ -53,14 +39,14 @@ authRoutes.post('/login', async (req, res) => {
     catch(err){
         res.status(500).json({message: "Une erreur est survenue lors de la connexion."});
     };
-});
+};
 
 // Registration route
-authRoutes.post('/register', async (req, res) => {
+export const register = async (req, res) => {
 	const {password} = req.body || {};
-	const first_name = typeof req.body?.first_name === 'string' ? req.body.first_name.trim() : '';
-	const last_name  = typeof req.body?.last_name  === 'string' ? req.body.last_name.trim()  : '';
-	const email      = typeof req.body?.email      === 'string' ? req.body.email.trim().toLowerCase() : '';
+	const first_name = typeof req.body?.first_name === 'string' ? req.body.first_name.trim()            : '';
+	const last_name  = typeof req.body?.last_name  === 'string' ? req.body.last_name.trim()             : '';
+	const email      = typeof req.body?.email      === 'string' ? req.body.email.trim().toLowerCase()   : '';
 
 	// Checking validity of given informations
 	if(
@@ -115,7 +101,4 @@ authRoutes.post('/register', async (req, res) => {
 		};
 		res.status(500).json({message: "Une erreur est survenue lors de la création du compte."});
 	};
-});
-
-// Exporting all the routes
-export default authRoutes;
+};

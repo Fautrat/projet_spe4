@@ -20,17 +20,18 @@ import {
 } from '../controllers/documentController.js';
 import { createFolder, deleteFolder, getFolderContents } from '../controllers/folderController.js';
 import { changePassword, modifyUser } from '../controllers/profileController.js';
+import { login, register } from '../controllers/authController.js';
 import { admin, connected } from '../middlewares/auth.js';
 import { errorHandler } from '../middlewares/errors.js';
 import { upload } from '../middlewares/upload.js';
-import authRoutes from './authRoutes.js';
 
 // Chaque route indique qui peut l'appeler :
 // connected = token valide et compte actif ; admin = connected + rôle admin
 const apiRoutes = Router();
 
 // Connexion et inscription (publiques)
-apiRoutes.use('/auth', authRoutes);
+apiRoutes.post('/login', login);
+apiRoutes.post('/register', register);
 
 // Profils
 apiRoutes.patch('/me', connected, modifyUser);
