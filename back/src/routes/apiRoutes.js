@@ -20,7 +20,14 @@ import {
 } from '../controllers/documentController.js';
 import { createFolder, deleteFolder, getFolderContents } from '../controllers/folderController.js';
 import { changePassword, modifyUser } from '../controllers/profileController.js';
-import { login, register } from '../controllers/authController.js';
+import {
+	login,
+	register,
+	verifyTwoFactor,
+	setupTwoFactor,
+	enableTwoFactor,
+	disableTwoFactor,
+} from '../controllers/authController.js';
 import { admin, connected } from '../middlewares/auth.js';
 import { errorHandler } from '../middlewares/errors.js';
 import { upload } from '../middlewares/upload.js';
@@ -32,6 +39,12 @@ const apiRoutes = Router();
 // Connexion et inscription (publiques)
 apiRoutes.post('/auth/login', login);
 apiRoutes.post('/auth/register', register);
+apiRoutes.post('/auth/2fa/verify', verifyTwoFactor);
+
+// Double authentification
+apiRoutes.post('/auth/2fa/setup', connected, setupTwoFactor);
+apiRoutes.post('/auth/2fa/enable', connected, enableTwoFactor);
+apiRoutes.post('/auth/2fa/disable', connected, disableTwoFactor);
 
 // Profils
 apiRoutes.patch('/users/me', connected, modifyUser);
