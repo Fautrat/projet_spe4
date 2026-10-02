@@ -16,6 +16,8 @@ Chaque partie a son propre dossier (`back`, `front`, `websocket`).
 
 ### Le back
 
+Nous avons opté pour une API en vue de faciliter la répartition des tâches (cela nous permettait de développer chaque partie en parallèle pour tout rebrancher ensemble aisément au fur et à mesure). Cette API a été réalisée en JavaScript avec Express car c'est un framework simple, léger, et bien connu, ce qui permet de créer rapidement une API REST sans configuration excessive. Il correspond bien à nos besoins et est facile à prendre en main pour tout le groupe dans la mesure où il a été régulièrement abordé en cours.
+
 ### Le front
 
 #### Vite
