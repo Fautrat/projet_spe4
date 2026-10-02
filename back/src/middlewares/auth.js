@@ -10,6 +10,8 @@ export default function auth(req, res, next){
 	if(!token){return res.status(401).json({message: "Non authentifié."});};
 	try{
 		req.user = jwt.verify(token, process.env.JWT_SECRET);
+		// le jeton temporaire de la 2FA (purpose: 'totp') ne sert qu'à /auth/2fa/verify
+		if(req.user.purpose){return res.status(401).json({message: "Token invalide ou expiré."});};
 		next();
 	}
 	catch{
@@ -25,7 +27,7 @@ async function checkAccount(req, res, next) {
 		throw new HttpError(401, 'Ce compte n\'existe plus.');
 	}
 	if (account.is_blocked) {
-		throw new HttpError(403, 'Ce compte a été bloqué.');
+		throw new HttpError(401, 'Ce compte a été bloqué.');
 	}
 	req.user = account;
 	next();

@@ -47,8 +47,8 @@ export function createVoice(socket) {
 	async function addCandidate(peer, candidate) {
 		try {
 			await peer.pc.addIceCandidate(candidate);
-		} catch (err) {
-			console.error(err.message);
+		} catch {
+			// candidat refusé par le navigateur : on l'ignore
 		}
 	}
 
@@ -135,7 +135,8 @@ export function createVoice(socket) {
 		const peer = peers.get(message.from);
 
 		if (message.type === 'voice-join' || message.type === 'voice-ring') {
-			state.callers[message.from] = true;
+			// heure d'arrivée dans l'appel, affichée dans la liste des appels
+			state.callers[message.from] = state.callers[message.from] || Date.now();
 
 			if (message.type === 'voice-join' && state.inCall) {
 				const created = createPeer(message.from, message.sender);

@@ -12,6 +12,7 @@ import { checkDatabaseConnection } from './config/db.js';
 const PORT 			= Number(process.env.PORT) || 3000;
 const CLIENT_URL	= process.env.CLIENT_URL || 'http://localhost:5173';
 const app 			= express();
+app.disable('x-powered-by');
 app.use(cors({ origin: CLIENT_URL }));
 app.use(express.json({ limit: '2mb' }));
 app.get('/api/health', (req, res) => {res.json({ status: 'ok' });});

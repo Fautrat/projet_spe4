@@ -2,6 +2,7 @@ import * as documents from '../models/documentModel.js';
 import * as folders from '../models/folderModel.js';
 import { HttpError, requireText } from '../middlewares/errors.js';
 import { deleteStoredFiles } from '../middlewares/upload.js';
+import { kickFromWebsocket } from '../config/websocket.js';
 
 // Un dossier invisible pour l'utilisateur répond 404, pour ne pas révéler qu'il existe
 async function findVisibleOr404(id, user) {
@@ -53,7 +54,9 @@ export async function deleteFolder(req, res) {
 	}
 
 	const storedFiles = await folders.findStoredFilesInTree(folder.id);
+	const documentIds = await folders.findDocumentIdsInTree(folder.id);
 	await folders.remove(folder.id);
 	await deleteStoredFiles(storedFiles);
+	await Promise.all(documentIds.map((documentId) => kickFromWebsocket({ documentId, reason: 'deleted' })));
 	res.status(204).end();
 }

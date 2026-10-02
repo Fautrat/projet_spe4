@@ -6,7 +6,7 @@ import DocumentMembers from '../components/DocumentMembers.vue';
 import VoiceCall from '../components/VoiceCall.vue';
 import { getDocument, loadFileUrl, replaceFile, saveDocument } from '../services/backApi.js';
 import { connect, me } from '../services/websocket.js';
-import { session } from '../stores/session.js';
+import { closeSession, session } from '../stores/session.js';
 import { formatDate, formatSize } from '../utils/format.js';
 import { diff, shift } from '../utils/textDiff.js';
 import { createVoice } from '../webRTC/voice.js';
@@ -23,11 +23,12 @@ const cursorsDiv = ref(null);
 const cursors = reactive({}); // id du client -> { name, color, index }
 const roomUsers = ref([]);
 const chatMessages = ref([]);
+const kicked = ref(''); // message affiché quand on perd l'accès au document en direct
 
 let saveTimer = null;
 
 // Édition à plusieurs : on envoie tout le texte aux autres à chaque frappe
-// et le serveur websocket sauvegarde en BDD toutes les 10s.
+// et le serveur websocket sauvegarde en BDD 1,5 s après la dernière frappe (et au moins toutes les 10 s).
 // Si le websocket ne marche pas, on sauvegarde nous-mêmes avec l'API.
 let socket = null;
 const joined = ref(false);
@@ -52,7 +53,7 @@ function openSocket() {
 // Pendant ce temps les modifications partent par l'API
 function onSocketClose(event) {
 	joined.value = false;
-	if (leaving) return;
+	if (leaving || event.code === 4003) return;
 	if (event.code === 4001) {
 		error.value = 'Session expirée, reconnectez-vous pour éditer à plusieurs';
 		return;
@@ -84,6 +85,7 @@ async function onMessage(message) {
 		roomUsers.value = message.users;
 	} else if (message.type === 'content') {
 		receiveContent(message.text);
+		markModified(message.name);
 	} else if (message.type === 'chat') {
 		chatMessages.value.push(message.message);
 	} else if (message.type === 'cursor') {
@@ -97,9 +99,15 @@ async function onMessage(message) {
 	} else if (message.type === 'saved') {
 		saveFailed.value = false;
 		status.value = 'Enregistré';
+		if (message.updated_at) {
+			doc.value.updated_at = message.updated_at;
+			doc.value.updated_by_name = message.updated_by_name;
+		}
 	} else if (message.type === 'save-error') {
 		saveFailed.value = true;
 		status.value = 'Échec de l\'enregistrement';
+	} else if (message.type === 'kicked') {
+		onKicked(message.reason);
 	} else if (message.type === 'error') {
 		error.value = message.error;
 	}
@@ -117,6 +125,22 @@ function receiveContent(newText) {
 	nextTick(() => {
 		if (document.activeElement === el) el.setSelectionRange(start, end);
 	});
+}
+
+// Le serveur nous sort de la room : compte bloqué, invitation retirée ou document supprimé
+function onKicked(reason) {
+	leaving = true;
+	clearTimeout(saveTimer);
+	saveTimer = null;
+	voice.value?.stop();
+	if (reason === 'blocked') {
+		closeSession();
+		window.location.assign('/login');
+		return;
+	}
+	kicked.value = reason === 'deleted'
+		? 'Ce document vient d\'être supprimé.'
+		: 'Vous avez été retiré de ce document.';
 }
 
 function moveCursors(change) {
@@ -211,10 +235,16 @@ async function save() {
 	}
 }
 
+function markModified(name) {
+	doc.value.updated_at = new Date().toISOString();
+	doc.value.updated_by_name = name;
+}
+
 function onInput(event) {
 	moveCursors(diff(text.value, event.target.value));
 	text.value = event.target.value;
 	status.value = 'Modifications en cours…';
+	markModified(me.name);
 
 	if (joined.value) {
 		socket.sendJson({ type: 'content', text: text.value });
@@ -254,7 +284,12 @@ load();
 </script>
 
 <template>
-	<section v-if="doc" class="page">
+	<section v-if="kicked" class="page">
+		<p class="error">{{ kicked }}</p>
+		<RouterLink :to="{ name: 'library' }" class="back">← Retour à la bibliothèque</RouterLink>
+	</section>
+
+	<section v-else-if="doc" class="page">
 		<RouterLink :to="backLink" class="back">← Retour à la bibliothèque</RouterLink>
 
 		<div class="doc-header">
@@ -274,7 +309,7 @@ load();
 
 		<p v-if="error" class="error">{{ error }}</p>
 
-		<VoiceCall v-if="voice" :key="connectionCount" :voice="voice" />
+		<VoiceCall v-if="voice" :key="connectionCount" :voice="voice" :users="roomUsers" />
 		<DocumentMembers :document-id="doc.id" :can-invite="doc.created_by === session.user.id" />
 		<ChatBox v-if="voice" :messages="chatMessages" :disabled="!joined" @send="sendChat" />
 

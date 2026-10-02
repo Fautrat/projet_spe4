@@ -17,7 +17,7 @@ export async function canAccess(id, userId) {
 	const [rows] = await db.query(
 		`SELECT 1 FROM documents d
 		JOIN users u ON u.id = ? AND u.is_blocked = FALSE
-		WHERE d.id = ? AND (d.created_by = ? OR EXISTS (
+		WHERE d.id = ? AND d.file_path IS NULL AND (d.created_by = ? OR EXISTS (
 			SELECT 1 FROM document_members m WHERE m.document_id = d.id AND m.user_id = ?
 		))`,
 		[userId, id, userId, userId],
@@ -31,5 +31,14 @@ export async function saveDoc(id) {
 
 	await db.query('UPDATE documents SET content = ?, updated_by = COALESCE(?, updated_by) WHERE id = ?', [doc.text, doc.userId, id]);
 	doc.changed = false;
-	return true;
+
+	// date et auteur enregistrés, envoyés aux clients pour mettre à jour « Modifié le … par … »
+	const [rows] = await db.query(
+		`SELECT documents.updated_at, users.first_name, users.last_name
+		FROM documents
+		JOIN users ON users.id = documents.updated_by
+		WHERE documents.id = ?`,
+		[id],
+	);
+	return rows[0] || null;
 }

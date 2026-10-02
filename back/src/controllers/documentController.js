@@ -1,5 +1,6 @@
 import * as documents from '../models/documentModel.js';
 import * as members from '../models/memberModel.js';
+import { kickFromWebsocket } from '../config/websocket.js';
 import { HttpError, requireEmail, requireText } from '../middlewares/errors.js';
 import { deleteStoredFiles, originalName, storedFilePath } from '../middlewares/upload.js';
 import { findOwnFolderOr404 } from './folderController.js';
@@ -106,6 +107,7 @@ export async function deleteDocument(req, res) {
 	if (doc.file_path) {
 		await deleteStoredFiles([doc.file_path]);
 	}
+	await kickFromWebsocket({ documentId: doc.id, reason: 'deleted' });
 	res.status(204).end();
 }
 
@@ -162,5 +164,6 @@ export async function removeMember(req, res) {
 	if (!(await members.remove(doc.id, userId))) {
 		throw new HttpError(404, 'Cette personne n\'est pas invitée sur ce document.');
 	}
+	await kickFromWebsocket({ userId: Number(userId), documentId: doc.id, reason: 'removed' });
 	res.status(204).end();
 }

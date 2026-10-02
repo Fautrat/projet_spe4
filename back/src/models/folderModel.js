@@ -51,6 +51,20 @@ export async function findStoredFilesInTree(id) {
 	return rows.map((row) => row.file_path);
 }
 
+// Documents du dossier et de tous ses sous-dossiers, pour fermer leurs rooms websocket après la suppression
+export async function findDocumentIdsInTree(id) {
+	const [rows] = await db.query(
+		`WITH RECURSIVE tree AS (
+			SELECT id FROM folders WHERE id = ?
+			UNION ALL
+			SELECT f.id FROM folders f JOIN tree t ON f.parent_id = t.id
+		)
+		SELECT id FROM documents WHERE folder_id IN (SELECT id FROM tree)`,
+		[id],
+	);
+	return rows.map((row) => row.id);
+}
+
 // Les sous-dossiers et documents partent avec (ON DELETE CASCADE)
 export async function remove(id) {
 	await db.query('DELETE FROM folders WHERE id = ?', [id]);

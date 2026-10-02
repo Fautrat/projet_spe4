@@ -1,17 +1,56 @@
 import 'dotenv/config';
 import { randomUUID } from 'node:crypto';
+import { createServer } from 'node:http';
 import jwt from 'jsonwebtoken';
 import { WebSocketServer } from 'ws';
-import { getRoomUsers, joinRoom, leaveRoom, sendToRoom, roomExists } from './rooms.js';
+import { getRoomUsers, joinRoom, kick, leaveRoom, sendToRoom, roomExists } from './rooms.js';
 import { canAccess, docs, getDoc, saveDoc } from './documents.js';
 import { addMessage, getMessages } from './messages.js';
 
 const PORT = Number(process.env.PORT) || 3001;
-const wss = new WebSocketServer({ port: PORT });
+
+// Route interne POST /kick, appelée par le back avec un jeton { purpose: 'kick' } :
+// elle sort de leur room un compte bloqué, une personne retirée d'un document ou tout le monde d'un document supprimé
+const server = createServer((req, res) => {
+	if (req.method !== 'POST' || req.url !== '/kick') {
+		res.writeHead(404).end();
+		return;
+	}
+	let body = '';
+	req.on('data', (chunk) => {
+		body += chunk;
+	});
+	req.on('end', () => {
+		try {
+			const payload = jwt.verify(req.headers.authorization?.split(' ')[1], process.env.JWT_SECRET);
+			if (payload.purpose !== 'kick') throw new Error('Jeton refusé');
+			const { userId, documentId, reason } = JSON.parse(body);
+			kick(userId, documentId, reason);
+			res.writeHead(204).end();
+		} catch {
+			res.writeHead(401).end();
+		}
+	});
+});
+
+// 2 Mo maximum par message, comme le JSON accepté par le back
+const wss = new WebSocketServer({ server, maxPayload: 2 * 1024 * 1024 });
+
+// Seuls ces messages venant d'un client sont renvoyés aux autres, les autres types sont réservés au serveur
+function isRelayed(type) {
+	return type === 'content' || type === 'cursor' || (typeof type === 'string' && type.startsWith('voice-'));
+}
 
 async function save(id) {
 	try {
-		if (await saveDoc(id)) sendToRoom(id, { type: 'saved' });
+		const saved = await saveDoc(id);
+		if (saved) {
+			sendToRoom(id, {
+				type: 'saved',
+				updated_at: saved.updated_at,
+				updated_by_name: `${saved.first_name} ${saved.last_name}`,
+			});
+		}
 	} catch (err) {
 		console.error(err.message);
 		sendToRoom(id, { type: 'save-error' });
@@ -38,6 +77,8 @@ wss.on('connection', (ws, req) => {
 	const token = new URL(req.url, 'http://localhost').searchParams.get('token');
 	try {
 		const user = jwt.verify(token, process.env.JWT_SECRET);
+		// le jeton temporaire de la 2FA ne vaut pas connexion
+		if (user.purpose) throw new Error('Jeton temporaire');
 		ws.userId = user.id;
 		ws.userName = `${user.first_name} ${user.last_name}`;
 	} catch {
@@ -59,6 +100,7 @@ wss.on('connection', (ws, req) => {
 
 		if (message.type === 'join') {
 			await leave(ws);
+			message.id = Number(message.id);
 
 			let doc = null;
 			let messages = [];
@@ -102,12 +144,22 @@ wss.on('connection', (ws, req) => {
 			return;
 		}
 
+		if (!isRelayed(message.type)) return;
+
 		if (message.type === 'content') {
-			const doc = docs.get(ws.room);
+			if (typeof message.text !== 'string') return;
+			const room = ws.room;
+			const doc = docs.get(room);
 			doc.text = message.text;
 			doc.changed = true;
 			doc.userId = ws.userId;
+
+			// on enregistre 1,5 s après la dernière frappe
+			clearTimeout(doc.saveTimer);
+			doc.saveTimer = setTimeout(() => save(room), 1500);
 		}
+
+		if (message.type === 'cursor' || message.type === 'content') message.name = ws.userName;
 
 		message.from = ws.id;
 		message.userId = ws.userId;
@@ -117,4 +169,6 @@ wss.on('connection', (ws, req) => {
 	ws.on('close', () => leave(ws));
 });
 
-console.log(`Serveur WebSocket démarré sur ws://localhost:${PORT}`);
+server.listen(PORT, () => {
+	console.log(`Serveur WebSocket démarré sur ws://localhost:${PORT}`);
+});
