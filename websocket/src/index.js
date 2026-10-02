@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { WebSocketServer } from 'ws';
 import { getRoomUsers, joinRoom, leaveRoom, sendToRoom, roomExists } from './rooms.js';
 import { canAccess, docs, getDoc, saveDoc } from './documents.js';
+import { addMessage, getMessages } from './messages.js';
 
 const PORT = Number(process.env.PORT) || 3001;
 const wss = new WebSocketServer({ port: PORT });
@@ -60,8 +61,12 @@ wss.on('connection', (ws, req) => {
 			await leave(ws);
 
 			let doc = null;
+			let messages = [];
 			try {
-				if (await canAccess(message.id, ws.userId)) doc = await getDoc(message.id);
+				if (await canAccess(message.id, ws.userId)) {
+					doc = await getDoc(message.id);
+					messages = await getMessages(message.id);
+				}
 			} catch (err) {
 				console.error(err.message);
 			}
@@ -72,7 +77,7 @@ wss.on('connection', (ws, req) => {
 
 			joinRoom(ws, message.id);
 
-			ws.send(JSON.stringify({ type: 'joined', id: message.id, clientId: ws.id, content: doc.text }));
+			ws.send(JSON.stringify({ type: 'joined', id: message.id, clientId: ws.id, content: doc.text, messages }));
 			sendToRoom(ws.room, { type: 'room-users', users: getRoomUsers(ws.room) });
 			sendToRoom(ws.room, { type: 'user-joined' }, ws);
 			return;
@@ -80,6 +85,20 @@ wss.on('connection', (ws, req) => {
 
 		if (!ws.room) {
 			ws.send(JSON.stringify({ type: 'error', error: 'Rejoins un document d’abord' }));
+			return;
+		}
+
+		// messagerie : enregistrée en base puis envoyée à toute la room, auteur compris
+		if (message.type === 'chat') {
+			const room = ws.room;
+			const content = typeof message.text === 'string' ? message.text.trim() : '';
+			if (!content || content.length > 2000) return;
+			try {
+				sendToRoom(room, { type: 'chat', message: await addMessage(room, ws.userId, content) });
+			} catch (err) {
+				console.error(err.message);
+				ws.send(JSON.stringify({ type: 'error', error: 'Message non envoyé' }));
+			}
 			return;
 		}
 

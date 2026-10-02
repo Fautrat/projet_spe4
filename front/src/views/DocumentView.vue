@@ -1,6 +1,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, reactive, ref, shallowRef, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import ChatBox from '../components/ChatBox.vue';
 import DocumentMembers from '../components/DocumentMembers.vue';
 import VoiceCall from '../components/VoiceCall.vue';
 import { getDocument, loadFileUrl, replaceFile, saveDocument } from '../services/backApi.js';
@@ -21,6 +22,7 @@ const textarea = ref(null);
 const cursorsDiv = ref(null);
 const cursors = reactive({}); // id du client -> { name, color, index }
 const roomUsers = ref([]);
+const chatMessages = ref([]);
 
 let saveTimer = null;
 
@@ -68,6 +70,7 @@ async function onMessage(message) {
 		reconnectDelay = 1000;
 		status.value = '';
 		roomUsers.value = [];
+		chatMessages.value = message.messages || [];
 		for (const id in cursors) delete cursors[id];
 		if (editedOffline) {
 			// on a écrit pendant la coupure : notre version remplace celle du serveur, pour ne rien perdre
@@ -81,6 +84,8 @@ async function onMessage(message) {
 		roomUsers.value = message.users;
 	} else if (message.type === 'content') {
 		receiveContent(message.text);
+	} else if (message.type === 'chat') {
+		chatMessages.value.push(message.message);
 	} else if (message.type === 'cursor') {
 		// nos autres onglets ont aussi un curseur, on ne l'affiche pas
 		if (session.user && message.userId === session.user.id) return;
@@ -118,6 +123,10 @@ function moveCursors(change) {
 	for (const cursor of Object.values(cursors)) {
 		cursor.index = shift(cursor.index, change);
 	}
+}
+
+function sendChat(content) {
+	socket.sendJson({ type: 'chat', text: content });
 }
 
 function sendCursor() {
@@ -267,6 +276,7 @@ load();
 
 		<VoiceCall v-if="voice" :key="connectionCount" :voice="voice" />
 		<DocumentMembers :document-id="doc.id" :can-invite="doc.created_by === session.user.id" />
+		<ChatBox v-if="voice" :messages="chatMessages" :disabled="!joined" @send="sendChat" />
 
 		<div v-if="!doc.file_path" class="parchment doc-editor">
 			<!-- sur une seule ligne : un espace en trop décalerait les curseurs -->

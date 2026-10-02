@@ -81,7 +81,8 @@ Invitations
 - [ ] Brancher la 2FA quand ses routes existeront, puis supprimer les mocks
 - [x] Appel audio avec une personne invitée
 - [x] curseur
-- [ ] Bonus : appel à plusieurs, vidéo, messagerie instantanée
+- [x] Messagerie instantanée par document (`ChatBox.vue`, table `documents_messages`, enregistrée par le websocket)
+- [ ] Bonus : appel vidéo
 
 ## Websocket
 

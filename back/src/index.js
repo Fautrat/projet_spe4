@@ -1,4 +1,7 @@
 import 'dotenv/config';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import cors from 'cors';
 import express from 'express';
 import morgan from 'morgan';
@@ -29,6 +32,17 @@ app.use(morgan(":date[Europe/Paris] \: :remote-addr - :method :url | :status | :
 
 // Routes
 app.use('/api', apiRoutes)
+
+// Front compilé servi par le back, sur la même origine que l'API
+const FRONT_DIR = fileURLToPath(new URL('../../front/dist', import.meta.url));
+if (existsSync(FRONT_DIR)) {
+	app.use(express.static(FRONT_DIR));
+	// Les routes du front renvoient index.html, Vue Router prend le relais
+	app.use((req, res, next) => {
+		if (req.method !== 'GET' || req.path.startsWith('/api')) return next();
+		res.sendFile(path.join(FRONT_DIR, 'index.html'));
+	});
+}
 
 // Database check
 try {

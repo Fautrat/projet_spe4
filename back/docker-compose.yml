@@ -1,3 +1,5 @@
+name: mysqlsp4
+
 services:
   mysql:
     image: mysql:8.4
@@ -14,7 +16,7 @@ services:
     volumes:
       - spe4_mysql:/var/lib/mysql
       # Initialisation de la base de données avec le script SQL fourni
-      - ./database/init:/docker-entrypoint-initdb.d:ro
+      - ../database/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s

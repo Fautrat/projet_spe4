@@ -8,6 +8,7 @@ export const conn = createPool({
 	password: process.env.DB_PASSWORD,
 	database: process.env.DB_DATABASE,
 	charset: 'utf8mb4',
+	timezone: 'Z',
 	connectionLimit: 10,
 });
 
