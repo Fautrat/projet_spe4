@@ -69,3 +69,28 @@ export async function findPasswordHash(id) {
 export async function setPassword(id, passwordHash) {
 	await db.query('UPDATE users SET password_hash = ? WHERE id = ?', [passwordHash, id]);
 }
+
+// Avec le secret de la double authentification, seulement pour vérifier un code
+export async function findWithTotp(id) {
+	const [rows] = await db.query(
+		`SELECT id, email, first_name, last_name, role, is_blocked, totp_secret, totp_enabled
+		FROM users
+		WHERE id = ?`,
+		[id],
+	);
+	return rows[0] || null;
+}
+
+export async function setTotpSecret(id, secret) {
+	await db.query('UPDATE users SET totp_secret = ? WHERE id = ?', [secret, id]);
+}
+
+export async function enableTotp(id) {
+	await db.query('UPDATE users SET totp_enabled = TRUE WHERE id = ?', [id]);
+	return findById(id);
+}
+
+export async function disableTotp(id) {
+	await db.query('UPDATE users SET totp_secret = NULL, totp_enabled = FALSE WHERE id = ?', [id]);
+	return findById(id);
+}

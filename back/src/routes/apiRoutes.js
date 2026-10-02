@@ -39,7 +39,7 @@ const apiRoutes = Router();
 // Connexion et inscription (publiques)
 apiRoutes.post('/auth/login', loginLimit, login);
 apiRoutes.post('/auth/register', register);
-apiRoutes.post('/auth/2fa/verify', verifyTwoFactor);
+apiRoutes.post('/auth/2fa/verify', loginLimit, verifyTwoFactor);
 
 // Double authentification
 apiRoutes.post('/auth/2fa/setup', connected, setupTwoFactor);
