@@ -47,3 +47,18 @@ export function sendToRoom(name, message, except = null) {
 		}
 	}
 }
+
+// Sort de leur room les connexions visées, par compte (userId), par document (documentId) ou les deux
+// Le code 4003 dit au front de ne pas se reconnecter
+export function kick(userId, documentId, reason) {
+	for (const [roomName, room] of rooms) {
+		if (documentId && roomName !== documentId) continue;
+		for (const client of room) {
+			if (userId && client.userId !== userId) continue;
+			if (client.readyState === WebSocket.OPEN) {
+				client.send(JSON.stringify({ type: 'kicked', reason }));
+				client.close(4003, 'Accès retiré');
+			}
+		}
+	}
+}

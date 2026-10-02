@@ -104,12 +104,12 @@ export function getMembers(documentId) {
 	return request('GET', `/api/documents/${documentId}/members`);
 }
 
-// Invite par adresse email ; renvoie la personne invitée
 // Comptes qu'on peut encore inviter (réservé au créateur du document)
 export function getInvitableUsers(documentId) {
 	return request('GET', `/api/documents/${documentId}/invitable`);
 }
 
+// Invite par adresse email ; renvoie la personne invitée
 export function inviteMember(documentId, email) {
 	return request('POST', `/api/documents/${documentId}/members`, { email });
 }
@@ -148,7 +148,7 @@ export function setUserBlocked(id, isBlocked) {
 	return request('PATCH', `/api/admin/users/${id}`, { is_blocked: isBlocked });
 }
 
-// Profil de l'utilisateur connecté (vrai back, même en mode mock)
+// Profil de l'utilisateur connecté
 
 export function updateProfile(changes) {
 	return request('PATCH', '/api/users/me', changes);

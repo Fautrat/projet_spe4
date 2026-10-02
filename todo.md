@@ -13,9 +13,9 @@
 - [x] Middlewares : `auth.js` (token, compte relu en base, `connected`, `admin`, `loginLimit`), `upload.js`, `errors.js`
 - [x] Upload des fichiers (multer), suppression sur le disque avec le document ou le dossier
 - [x] Visibilité : on ne voit que ses documents et dossiers et ceux où on est invité (admins compris)
-- [ ] 2FA à la connexion : renvoyer `{ requires_2fa: true, temp_token }` si la 2FA est active
+- [x] 2FA à la connexion : renvoyer `{ requires_2fa: true, temp_token }` si la 2FA est active
 - [x] Limiter les tentatives de connexion (express-rate-limit) : 5 échecs par tranche de 15 min pour le couple IP et email
-- [ ] Mettre aussi `loginLimit` sur `POST /api/auth/2fa/verify` quand la route existera
+- [x] `loginLimit` aussi sur `POST /api/auth/2fa/verify`
 
 ### Routes attendues par le front
 
@@ -29,16 +29,16 @@ Authentification
 
 - [x] `POST /api/auth/register` (public) : `{ first_name, last_name, email, password }` :`{ user, token }`, rôle toujours `user`
 - [x] `POST /api/auth/login` (public) : `{ email, password }` :`{ user, token }`
-- [ ] `POST /api/auth/2fa/verify` (public) : `{ temp_token, code }` :`{ user, token }`
+- [x] `POST /api/auth/2fa/verify` (public) : `{ temp_token, code }` :`{ user, token }`
 - [x] Déconnexion côté front (le token JWT est simplement oublié)
 
-Profil (`profileController.js`, requêtes dans `userModel.js`, branché côté front sauf la 2FA)
+Profil (`profileController.js`, requêtes dans `userModel.js`, branché côté front)
 
 - [x] `PATCH /api/users/me` (connecté) : `{ first_name, last_name, email }` → `user`
 - [x] `PATCH /api/users/me/password` (connecté) : `{ current_password, new_password }`, ancien mot de passe vérifié, 8 caractères minimum
-- [ ] `POST /api/auth/2fa/setup` (connecté) → `{ secret, qr_code }`, QR code en data URL
-- [ ] `POST /api/auth/2fa/enable` (connecté) : `{ code }` → `user`
-- [ ] `POST /api/auth/2fa/disable` (connecté) : `{ code }` → `user`
+- [x] `POST /api/auth/2fa/setup` (connecté) → `{ secret, qr_code }`, QR code en data URL
+- [x] `POST /api/auth/2fa/enable` (connecté) : `{ code }` → `user`
+- [x] `POST /api/auth/2fa/disable` (connecté) : `{ code }` → `user`
 
 Dossiers
 
@@ -78,7 +78,7 @@ Invitations
 - [X] Sauvegarde par l'API si le websocket tombe
 - [x] Reconnexion automatique du websocket, le texte écrit pendant la coupure est renvoyé au retour
 - [x] Brancher la modification du profil et du mot de passe
-- [ ] Brancher la 2FA quand ses routes existeront, puis supprimer les mocks
+- [x] Brancher la 2FA et supprimer les mocks
 - [x] Appel audio avec une personne invitée
 - [x] curseur
 - [x] Messagerie instantanée par document (`ChatBox.vue`, table `documents_messages`, enregistrée par le websocket)

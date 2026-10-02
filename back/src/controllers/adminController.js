@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import { HttpError, requireEmail, requireText } from '../middlewares/errors.js';
+import { kickFromWebsocket } from '../config/websocket.js';
 import * as users from '../models/userModel.js';
 
 // GET /api/admin/users
@@ -38,6 +39,9 @@ export async function setUserBlocked(req, res) {
 	const user = await users.setBlocked(id, req.body?.is_blocked);
 	if (!user) {
 		throw new HttpError(404, 'Utilisateur introuvable.');
+	}
+	if (user.is_blocked) {
+		await kickFromWebsocket({ userId: user.id, reason: 'blocked' });
 	}
 	res.json(user);
 }
