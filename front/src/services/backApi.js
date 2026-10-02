@@ -1,5 +1,4 @@
-import * as mock from '../mocks/mockBackApi.js';
-import { API_URL, USE_MOCKS } from '../config/config.js';
+import { API_URL } from '../config/config.js';
 import { closeSession, session } from '../stores/session.js';
 
 // Les champs suivent les colonnes de la base (first_name, is_blocked, file_path...)
@@ -49,7 +48,7 @@ export function register(user) {
 // Le token JWT n'est pas gardé côté serveur : se déconnecter revient à l'oublier côté front
 export async function logout() {}
 
-// Dossiers et documents (vrai back, même en mode mock)
+// Dossiers et documents
 
 function fileForm(file, fields = {}) {
 	const form = new FormData();
@@ -131,7 +130,7 @@ export async function loadFileUrl(doc) {
 	return URL.createObjectURL(await response.blob());
 }
 
-// Utilisateurs (admin, vrai back, même en mode mock)
+// Utilisateurs (admin)
 
 export function getUsers() {
 	return request('GET', '/api/admin/users');
@@ -164,22 +163,13 @@ export function changePassword(currentPassword, newPassword) {
 
 // Renvoie { secret, qr_code } : qr_code est une image (data URL) générée par le back
 export function setupTwoFactor() {
-	if (USE_MOCKS) {
-		return mock.setupTwoFactor();
-	}
 	return request('POST', '/api/auth/2fa/setup');
 }
 
 export function enableTwoFactor(code) {
-	if (USE_MOCKS) {
-		return mock.enableTwoFactor(code);
-	}
 	return request('POST', '/api/auth/2fa/enable', { code });
 }
 
 export function disableTwoFactor(code) {
-	if (USE_MOCKS) {
-		return mock.disableTwoFactor(code);
-	}
 	return request('POST', '/api/auth/2fa/disable', { code });
 }
